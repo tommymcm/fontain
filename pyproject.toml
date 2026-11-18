@@ -1,7 +1,21 @@
 [project]
 name = "fontain"
 version = "0.1.0"
-description = "Add your description here"
+description = "Install and manage fonts from public repositories on unix systems"
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.13"
 dependencies = []
+
+[project.scripts]
+fontain = "fontain.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
