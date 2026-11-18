@@ -66,6 +66,21 @@ Repositories are stored in `$XDG_CONFIG_HOME/fontain/repos.json`.
 
 Fonts can be named by id (`roboto-mono`), by family (`"Roboto Mono"`), or with an explicit source (`google:robotomono`). Installed fonts are marked with `*` in search results.
 
+## Tab completion
+
+Pressing Tab after `fontain remove` (or `uninstall`/`rm`) suggests your installed fonts. Subcommand names complete too.
+
+```sh
+# bash: add to ~/.bashrc
+eval "$(fontain completion bash)"
+
+# zsh: add to ~/.zshrc (after compinit)
+eval "$(fontain completion zsh)"
+
+# fish: add to ~/.config/fish/config.fish
+fontain completion fish | source
+```
+
 ## Where things go
 
 | What | Path |

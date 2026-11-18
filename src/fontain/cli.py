@@ -4,7 +4,7 @@ import argparse
 import sys
 from collections.abc import Sequence
 
-from fontain import __version__, fontcache, index, net, paths, repos, sources, store
+from fontain import __version__, completion, fontcache, index, net, paths, repos, sources, store
 from fontain.sources import SOURCES, Selection, SourceError
 
 
@@ -268,6 +268,22 @@ def cmd_repo_remove(args) -> int:
     return 0
 
 
+def cmd_completion(args) -> int:
+    sub = args.parser._subparsers._group_actions[0]
+    commands = [(a.dest, a.help or "") for a in sub._choices_actions]
+    remove = sub.choices["remove"]
+    remove_names = [name for name, parser in sub.choices.items() if parser is remove]
+    print(completion.script(args.shell, commands, remove_names), end="")
+    return 0
+
+
+def cmd_complete(args) -> int:
+    if args.what == "installed":
+        for name in completion.installed_candidates():
+            print(name)
+    return 0
+
+
 # --- parser -----------------------------------------------------------------
 
 
@@ -344,6 +360,20 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("name", nargs="?", help="a built-in source or one of your repositories")
     s.add_argument("--clear", action="store_true", help="go back to the default order")
     s.set_defaults(func=cmd_repo_prefer)
+
+    s = sub.add_parser(
+        "completion", help="print a shell tab-completion script",
+        description='Enable with: eval "$(fontain completion bash)" in ~/.bashrc, '
+        'eval "$(fontain completion zsh)" in ~/.zshrc, or '
+        "`fontain completion fish | source` in ~/.config/fish/config.fish.",
+    )
+    s.add_argument("shell", choices=completion.SHELLS)
+    s.set_defaults(func=cmd_completion, parser=p)
+
+    # Hidden helper used by the completion scripts (no help= keeps it out of --help).
+    s = sub.add_parser("__complete")
+    s.add_argument("what", choices=["installed"])
+    s.set_defaults(func=cmd_complete)
     return p
 
 
