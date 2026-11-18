@@ -1,10 +1,11 @@
 """Command-line interface for fontain."""
 
 import argparse
+import shutil
 import sys
 from collections.abc import Sequence
 
-from fontain import __version__, completion, fontcache, index, net, paths, repl, repos, sources, store
+from fontain import __version__, completion, fontcache, index, logo, net, paths, repl, repos, sources, store
 from fontain.sources import SOURCES, Selection, SourceError
 
 
@@ -431,7 +432,8 @@ def start_shell() -> int:
         else:
             err(f"unknown command {cmd!r}")
 
-    return repl.repl(run, help_text, repl.Completer(commands, subcommands))
+    art = logo.banner(shutil.get_terminal_size().columns)
+    return repl.repl(run, help_text, repl.Completer(commands, subcommands), logo=art)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

@@ -15,7 +15,8 @@ def _session(monkeypatch, lines):
 
     monkeypatch.setattr(repl, "_setup_readline", lambda completer: None)
     real = repl.repl
-    monkeypatch.setattr(repl, "repl", lambda run, help_text, completer: real(run, help_text, completer, read=read))
+    monkeypatch.setattr(repl, "repl",
+                        lambda run, help_text, completer, logo=None: real(run, help_text, completer, read=read, logo=logo))
     return cli.main(["shell"])
 
 

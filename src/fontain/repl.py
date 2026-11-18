@@ -151,8 +151,11 @@ def repl(
     help_text: Callable[[str | None], None],
     completer: Completer,
     read: Callable[[str], str] = input,
+    logo: str | None = None,
 ) -> int:
     _setup_readline(completer)
+    if logo:
+        print(logo)
     print(BANNER)
     try:
         while True:
