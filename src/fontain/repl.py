@@ -155,7 +155,7 @@ def repl(
 ) -> int:
     _setup_readline(completer)
     if logo:
-        print(logo)
+        print(f"\n{logo}\n")  # a blank line above and below
     print(BANNER)
     try:
         while True:

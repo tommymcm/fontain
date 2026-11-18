@@ -144,3 +144,10 @@ def test_spaces_escaped(completer):
     store.save_manifest({"work:Acme Sans": {"source": "work", "id": "Acme Sans", "family": "Acme Sans",
                                             "files": [], "installed": ""}})
     assert completer.candidates("remove Ac") == ["Acme\\ Sans"]
+
+
+def test_logo_has_blank_line_above_and_below(capsys):
+    repl.repl(lambda argv: 0, lambda cmd: None, repl.Completer([], {}),
+              read=lambda prompt: (_ for _ in ()).throw(EOFError), logo="LOGO1\nLOGO2")
+    out = capsys.readouterr().out
+    assert out.startswith("\nLOGO1\nLOGO2\n\nfontain ")
