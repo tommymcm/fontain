@@ -1,4 +1,4 @@
-![fontain](docs/images/fontain-pixel.png)
+![fontain](docs/images/fontain-pixel-div2.png)
 
 `fontain` is a simple tool to install and manage fonts on unix systems from public repositories.
 
