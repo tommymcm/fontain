@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 
-def _xdg(var: str, default: str) -> Path:
+def xdg(var: str, default: str) -> Path:
     value = os.environ.get(var)
     if value and os.path.isabs(value):
         return Path(value)
@@ -18,19 +18,19 @@ def font_root() -> Path:
         return Path(override)
     if sys.platform == "darwin":
         return Path.home() / "Library" / "Fonts" / "fontain"
-    return _xdg("XDG_DATA_HOME", ".local/share") / "fonts" / "fontain"
+    return xdg("XDG_DATA_HOME", ".local/share") / "fonts" / "fontain"
 
 
 def cache_dir() -> Path:
-    return _xdg("XDG_CACHE_HOME", ".cache") / "fontain"
+    return xdg("XDG_CACHE_HOME", ".cache") / "fontain"
 
 
 def state_file() -> Path:
-    return _xdg("XDG_STATE_HOME", ".local/state") / "fontain" / "installed.json"
+    return xdg("XDG_STATE_HOME", ".local/state") / "fontain" / "installed.json"
 
 
 def config_dir() -> Path:
-    return _xdg("XDG_CONFIG_HOME", ".config") / "fontain"
+    return xdg("XDG_CONFIG_HOME", ".config") / "fontain"
 
 
 def config_file() -> Path:

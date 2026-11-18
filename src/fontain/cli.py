@@ -256,6 +256,25 @@ def cmd_completion(args) -> int:
     commands = [(a.dest, a.help or "") for a in sub._choices_actions]
     remove = sub.choices["remove"]
     remove_names = [name for name, parser in sub.choices.items() if parser is remove]
+    if args.install or args.uninstall:
+        shell = args.shell or completion.detect_shell()
+        if not shell:
+            err("couldn't detect your shell from $SHELL; pass it explicitly, e.g. `--install bash`")
+            return 2
+        if args.install:
+            path = completion.install(shell)
+            print(f"Installed {shell} completion: {path}")
+            print("It takes effect in new shells.")
+            if shell == "bash" and not completion.bash_completion_available():
+                print("note: this needs the bash-completion package "
+                      "(e.g. `dnf install bash-completion` / `apt install bash-completion`)")
+        else:
+            path = completion.uninstall(shell)
+            print(f"Removed {path}" if path else f"No fontain {shell} completion was installed.")
+        return 0
+    if not args.shell:
+        err("specify a shell (bash, zsh, fish), or use --install")
+        return 2
     print(completion.script(args.shell, commands, remove_names), end="")
     return 0
 
@@ -344,12 +363,16 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_repo_prefer)
 
     s = sub.add_parser(
-        "completion", help="print a shell tab-completion script",
-        description='Enable with: eval "$(fontain completion bash)" in ~/.bashrc, '
-        'eval "$(fontain completion zsh)" in ~/.zshrc, or '
-        "`fontain completion fish | source` in ~/.config/fish/config.fish.",
+        "completion", help="set up shell tab completion",
+        description="fontain enables bash/fish completion automatically on first run. "
+        "Use --install/--uninstall to manage it yourself, or print the script for SHELL "
+        '(for zsh: add eval "$(fontain completion zsh)" to ~/.zshrc).',
     )
-    s.add_argument("shell", choices=completion.SHELLS)
+    s.add_argument("shell", nargs="?", choices=completion.SHELLS, help="default for --install: from $SHELL")
+    mode = s.add_mutually_exclusive_group()
+    mode.add_argument("--install", action="store_true",
+                      help="install into the shell's completion directory (bash, fish)")
+    mode.add_argument("--uninstall", action="store_true", help="remove what --install added")
     s.set_defaults(func=cmd_completion, parser=p)
 
     # Hidden helper used by the completion scripts (no help= keeps it out of --help).
@@ -362,10 +385,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        return args.func(args)
+        rc = args.func(args)
     except KeyboardInterrupt:
         print(file=sys.stderr)
         return 130
-    except (store.StoreError, repos.RepoError, SourceError) as e:
+    except (store.StoreError, repos.RepoError, SourceError, completion.CompletionError) as e:
         err(str(e))
         return 1
+    if args.func not in (cmd_completion, cmd_complete):
+        completion.auto_setup()
+    return rc

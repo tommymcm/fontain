@@ -70,18 +70,26 @@ Fonts can be named by id (`roboto-mono`), by family (`"Roboto Mono"`), or with a
 
 Pressing Tab after `fontain remove` (or `uninstall`/`rm`) suggests the fonts fontain has installed, one name per font. Every suggestion is accepted by `remove`: it's the bare id, or `source:id` when the bare id is ambiguous. Type `source:` to complete fully qualified names. Subcommand names complete too.
 
-Completion is attached to the `fontain` command, so install it with `uv tool install` or `pipx` rather than running it through `uv run`.
+**Setup is automatic for bash and fish.** The first time you run `fontain` in a terminal, it puts a small loader in your shell's own completion folder:
+
+- bash: `~/.local/share/bash-completion/completions/fontain` (needs the `bash-completion` package, which most distros install by default)
+- fish: `~/.config/fish/completions/fontain.fish`
+
+fontain doesn't edit `~/.bashrc` or any other rc file. Completion starts working in new shells. The loader regenerates the script each time a shell loads it, so upgrades are picked up automatically.
 
 ```sh
-# bash: add to ~/.bashrc
-eval "$(fontain completion bash)"
-
-# zsh: add to ~/.zshrc (after compinit)
-eval "$(fontain completion zsh)"
-
-# fish: add to ~/.config/fish/config.fish
-fontain completion fish | source
+fontain completion --install      # do it yourself (shell detected from $SHELL)
+fontain completion --uninstall    # remove it; first-run setup won't add it back
+export FONTAIN_NO_COMPLETION_SETUP=1   # disable the first-run setup
 ```
+
+**zsh** has no per-user completion folder, so add this to `~/.zshrc` (after `compinit`):
+
+```sh
+eval "$(fontain completion zsh)"
+```
+
+Completion is attached to the `fontain` command, so install fontain with `uv tool install` or `pipx` rather than running it through `uv run`.
 
 ## Where things go
 

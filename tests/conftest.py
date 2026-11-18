@@ -8,6 +8,9 @@ def isolated_dirs(monkeypatch, tmp_path):
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
+    monkeypatch.delenv("BASH_COMPLETION_USER_DIR", raising=False)
+    monkeypatch.setenv("FONTAIN_NO_COMPLETION_SETUP", "1")
     return tmp_path
 
 
