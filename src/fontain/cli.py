@@ -208,10 +208,12 @@ def cmd_repo_add(args) -> int:
     cfg = repos.parse_spec(args.spec)
     source = sources.make_source(args.name, cfg)
     if not args.no_check:
-        print(f"Checking {cfg['target']}...")
+        print(f"Checking {cfg['target']}...", flush=True)
         try:
             entries = source.fetch_index()
         except (net.NetError, SourceError, OSError, ValueError, KeyError) as e:
+            if isinstance(e, net.NetError) and e.status == 404:
+                e = f"GitHub repository {cfg['target']} not found (or private)"
             err(f"could not read repository: {e}")
             return 1
         if not entries:

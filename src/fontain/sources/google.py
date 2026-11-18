@@ -67,7 +67,17 @@ def parse_filename(name: str) -> tuple[int | None, str]:
     style = "italic" if italic else "normal"
     if variable:
         return None, style
-    return WEIGHT_NAMES.get(suffix.lower()), style
+    return _weight(suffix.lower()), style
+
+
+def _weight(suffix: str) -> int | None:
+    """Map a style suffix to a weight, tolerating prefixes like ``SemiWide``."""
+    if suffix in WEIGHT_NAMES:
+        return WEIGHT_NAMES[suffix]
+    for name in sorted(WEIGHT_NAMES, key=len, reverse=True):
+        if name and suffix.endswith(name):
+            return WEIGHT_NAMES[name]
+    return None
 
 
 def select_files(listing: list[dict[str, Any]], sel: Selection) -> list[tuple[str, str]]:

@@ -26,6 +26,10 @@ def test_parse_index():
     ("Lato-ExtraBoldItalic.ttf", (800, "italic")),
     ("Lato-Thin.ttf", (100, "normal")),
     ("Inter[opsz,wght].ttf", (None, "normal")),
+    ("MonaspaceNeon-SemiWideBold.otf", (700, "normal")),
+    ("MonaspaceNeon-SemiWideSemiBold.otf", (600, "normal")),
+    ("MonaspaceNeon-WideExtraLightItalic.otf", (200, "italic")),
+    ("Foo-Condensed.ttf", (None, "normal")),
     ("Inter-Italic[opsz,wght].ttf", (None, "italic")),
 ])
 def test_parse_filename(name, expected):
