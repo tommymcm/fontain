@@ -17,6 +17,10 @@ Or, install from a local checkout with `pipx install .` or `uv tool install .`
 
 ## Usage
 
+Run `fontain` with no arguments for an interactive REPL.
+
+### Commands
+
 ```sh
 fontain search roboto                   # search for fonts
 fontain info inter                      # details about a font
@@ -25,8 +29,6 @@ fontain install google:lato -w 400,700  # pick a source repo, and weights
 fontain list                            # list installed fonts
 fontain remove inter                    # uninstall a font
 ```
-
-Run `fontain` with no arguments for an interactive shell, where each line is a command (`search roboto`, `install inter`, ...) with tab completion and history.
 
 ### Add your own repositories
 
@@ -39,7 +41,7 @@ fontain repo prefer work                           # look here first for bare na
 
 ### Tab completion
 
-In bash, fontain asks to enable completion the first time you press Tab after `fontain`. Change your answer with `fontain completion --install`, `--uninstall` or `--reset`. For zsh, add `eval "$(fontain completion zsh)"` to `~/.zshrc`.
+Enable tab completion with `fontain completion --install`. For zsh, add `eval "$(fontain completion zsh)"` to `~/.zshrc`.
 
 ## Notes
 
