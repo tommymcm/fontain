@@ -10,7 +10,7 @@ A simple tool to install and manage fonts on unix systems from public repositori
 ## Install
 
 ```sh
-uv tool install git+https://github.com/<you>/fontain   # or: pipx install .
+uv tool install git+https://github.com/tommymcm/fontain   # or: pipx install .
 ```
 
 From a checkout: `uv tool install .`, or run it in place with `uv run fontain ...`.
