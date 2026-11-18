@@ -1,5 +1,7 @@
+import os
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -13,19 +15,35 @@ def _install(*keys):
     })
 
 
-def test_installed_candidates():
-    _install("fontsource:inter", "google:inter", "nerd:JetBrainsMono", "work:Acme Sans")
-    # "inter" is ambiguous, so only its qualified forms are offered
-    assert completion.installed_candidates() == [
-        "Acme Sans", "JetBrainsMono",
-        "fontsource:inter", "google:inter", "nerd:JetBrainsMono", "work:Acme Sans",
+def test_one_removable_name_per_font():
+    _install("fontsource:atkinson-hyperlegible", "nerd:JetBrainsMono", "work:Acme Sans")
+    assert completion.installed_candidates() == ["Acme Sans", "atkinson-hyperlegible", "JetBrainsMono"]
+    assert completion.installed_candidates(qualified=True) == [
+        "fontsource:atkinson-hyperlegible", "nerd:JetBrainsMono", "work:Acme Sans",
     ]
+
+
+def test_ambiguous_ids_are_qualified():
+    # "Inter" and "inter" collide because remove ignores case
+    _install("fontsource:inter", "inter:Inter", "nerd:JetBrainsMono")
+    assert completion.installed_candidates() == ["fontsource:inter", "inter:Inter", "JetBrainsMono"]
+
+
+def test_every_candidate_is_removable():
+    _install("fontsource:inter", "inter:Inter", "google:inter", "work:Acme Sans", "nerd:Acme")
+    manifest = store.load_manifest()
+    for qualified in (False, True):
+        names = completion.installed_candidates(qualified)
+        assert len(names) == len(manifest)
+        assert sorted(store.find_installed(n, manifest) for n in names) == sorted(manifest)
 
 
 def test_complete_command(capsys):
     _install("nerd:JetBrainsMono")
     assert cli.main(["__complete", "installed"]) == 0
-    assert capsys.readouterr().out.split() == ["JetBrainsMono", "nerd:JetBrainsMono"]
+    assert capsys.readouterr().out.split() == ["JetBrainsMono"]
+    assert cli.main(["__complete", "installed-keys"]) == 0
+    assert capsys.readouterr().out.split() == ["nerd:JetBrainsMono"]
 
 
 def test_hidden_from_help(capsys):
@@ -39,7 +57,7 @@ def test_hidden_from_help(capsys):
 def test_scripts_render(shell, capsys):
     assert cli.main(["completion", shell]) == 0
     out = capsys.readouterr().out
-    assert "__complete installed" in out
+    assert f"{sys.executable} -m fontain __complete" in out  # not whatever is on PATH
     assert "uninstall" in out and "search" in out
     assert "__" + "COMMANDS" not in out and "__REMOVE" not in out
 
@@ -47,18 +65,7 @@ def test_scripts_render(shell, capsys):
 BASH = shutil.which("bash")
 
 
-@pytest.fixture
-def bash_complete(tmp_path, capsys):
-    """Return f(line) -> COMPREPLY, running the real bash script against a fake fontain."""
-    bindir = tmp_path / "bin"
-    bindir.mkdir()
-    fake = bindir / "fontain"
-    fake.write_text("#!/bin/sh\nprintf '%s\\n' inter 'Acme Sans' fontsource:inter 'work:Acme Sans'\n")
-    fake.chmod(0o755)
-    cli.main(["completion", "bash"])
-    script = tmp_path / "fontain.bash"
-    script.write_text(capsys.readouterr().out)
-
+def _bash_runner(script, env):
     def run(line):
         driver = (
             f'source "{script}"\n'
@@ -68,19 +75,38 @@ def bash_complete(tmp_path, capsys):
         )
         result = subprocess.run(
             [BASH, "--norc", "-c", driver, "bash", line],
-            capture_output=True, text=True, env={"PATH": f"{bindir}:/usr/bin:/bin"}, check=True,
+            capture_output=True, text=True, env=env, check=True,
         )
         return [l for l in result.stdout.splitlines() if l]
 
     return run
 
 
+@pytest.fixture
+def bash_complete(tmp_path, capsys, monkeypatch):
+    """f(line) -> COMPREPLY, running the real bash script against a fake helper."""
+    fake = tmp_path / "fake-helper"
+    fake.write_text(
+        "#!/bin/sh\n"
+        'case "$2" in\n'
+        "  installed) printf '%s\\n' inter 'Acme Sans' ;;\n"
+        "  installed-keys) printf '%s\\n' fontsource:inter 'work:Acme Sans' ;;\n"
+        "esac\n"
+    )
+    fake.chmod(0o755)
+    monkeypatch.setattr(completion, "helper_command", lambda: str(fake))
+    cli.main(["completion", "bash"])
+    script = tmp_path / "fontain.bash"
+    script.write_text(capsys.readouterr().out)
+    return _bash_runner(script, {"PATH": "/usr/bin:/bin"})
+
+
 @pytest.mark.skipif(BASH is None, reason="bash not installed")
 @pytest.mark.parametrize("line,expected", [
     ("fontain re", ["remove", "refresh", "repo"]),
-    ("fontain remove ", ["inter", "Acme\\ Sans", "fontsource:inter", "work:Acme\\ Sans"]),
+    ("fontain remove ", ["inter", "Acme\\ Sans"]),
     ("fontain rm in", ["inter"]),
-    ("fontain uninstall inter ", ["inter", "Acme\\ Sans", "fontsource:inter", "work:Acme\\ Sans"]),
+    ("fontain uninstall inter ", ["inter", "Acme\\ Sans"]),
     ("fontain remove fontsource:", ["inter"]),  # text before ':' is not replaced by bash
     ("fontain remove work:Ac", ["Acme\\ Sans"]),
     ("fontain remove Acme\\ S", ["Acme\\ Sans"]),
@@ -89,3 +115,23 @@ def bash_complete(tmp_path, capsys):
 ])
 def test_bash_completion(bash_complete, line, expected):
     assert bash_complete(line) == expected
+
+
+@pytest.mark.skipif(BASH is None, reason="bash not installed")
+def test_bash_end_to_end_without_fontain_on_path(tmp_path, capsys):
+    """The real script + real helper, with no `fontain` executable on PATH."""
+    _install("fontsource:atkinson-hyperlegible", "fontsource:inter", "inter:Inter")
+    cli.main(["completion", "bash"])
+    script = tmp_path / "fontain.bash"
+    script.write_text(capsys.readouterr().out)
+    env = {k: v for k, v in os.environ.items() if k.startswith(("XDG_", "FONTAIN_", "HOME"))}
+    env["PATH"] = "/usr/bin:/bin"
+    run = _bash_runner(script, env)
+
+    names = run("fontain remove ")
+    assert names == ["atkinson-hyperlegible", "fontsource:inter", "inter:Inter"]
+    assert run("fontain remove at") == ["atkinson-hyperlegible"]
+    assert run("fontain remove inter:") == ["Inter"]
+    for name in names:
+        assert cli.main(["remove", "--no-cache", name]) == 0
+    assert store.load_manifest() == {}

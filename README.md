@@ -68,7 +68,9 @@ Fonts can be named by id (`roboto-mono`), by family (`"Roboto Mono"`), or with a
 
 ## Tab completion
 
-Pressing Tab after `fontain remove` (or `uninstall`/`rm`) suggests your installed fonts. Subcommand names complete too.
+Pressing Tab after `fontain remove` (or `uninstall`/`rm`) suggests the fonts fontain has installed, one name per font. Every suggestion is accepted by `remove`: it's the bare id, or `source:id` when the bare id is ambiguous. Type `source:` to complete fully qualified names. Subcommand names complete too.
+
+Completion is attached to the `fontain` command, so install it with `uv tool install` or `pipx` rather than running it through `uv run`.
 
 ```sh
 # bash: add to ~/.bashrc

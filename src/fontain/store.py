@@ -41,6 +41,28 @@ def font_dir(source: str, font_id: str) -> Path:
     return target
 
 
+def find_installed(spec: str, manifest: dict[str, dict[str, Any]]) -> str:
+    """Resolve what the user typed (``id``, family, or ``source:id``) to a manifest key.
+
+    Matching ignores case and spaces. This is the single definition of which
+    names ``fontain remove`` accepts; tab completion is derived from it.
+    """
+    source, sep, name = spec.partition(":")
+    if not sep:
+        source, name = "", spec
+    name = name.lower().replace(" ", "")
+    matches = [
+        key for key, rec in manifest.items()
+        if (not source or rec["source"] == source)
+        and name in (rec["id"].lower().replace(" ", ""), rec["family"].lower().replace(" ", ""))
+    ]
+    if not matches:
+        raise StoreError(f"{spec!r} is not installed")
+    if len(matches) > 1:
+        raise StoreError(f"{spec!r} is ambiguous: {', '.join(sorted(matches))}")
+    return matches[0]
+
+
 def is_installed(key: str) -> bool:
     return key in load_manifest()
 

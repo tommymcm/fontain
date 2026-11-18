@@ -6,20 +6,41 @@ That command only reads the installed-font manifest, so it is fast and
 never touches the network.
 """
 
-from collections import Counter
+import shlex
+import sys
 
 from fontain import store
 
 SHELLS = ("bash", "zsh", "fish")
 
 
-def installed_candidates() -> list[str]:
-    """Names ``fontain remove`` accepts: every ``source:id``, plus bare ids that are unique."""
+def _removable(name: str, key: str, manifest: dict) -> bool:
+    try:
+        return store.find_installed(name, manifest) == key
+    except store.StoreError:
+        return False
+
+
+def installed_candidates(qualified: bool = False) -> list[str]:
+    """One name per font installed by fontain, each guaranteed to work with ``remove``.
+
+    The bare id is offered when it identifies the font on its own, otherwise
+    ``source:id``. With ``qualified``, always ``source:id``.
+    """
     manifest = store.load_manifest()
-    ids = Counter(rec["id"] for rec in manifest.values())
-    keys = sorted(manifest, key=str.lower)
-    bare = sorted((i for i, n in ids.items() if n == 1), key=str.lower)
-    return bare + keys
+    out = []
+    for key, rec in manifest.items():
+        if not qualified and _removable(rec["id"], key, manifest):
+            out.append(rec["id"])
+        elif _removable(key, key, manifest):
+            out.append(key)
+    return sorted(out, key=str.lower)
+
+
+def helper_command() -> str:
+    """How the scripts call back into fontain: this exact interpreter, so it
+    works whether or not a ``fontain`` executable is on PATH."""
+    return f"{shlex.quote(sys.executable)} -m fontain"
 
 
 BASH = r"""# fontain bash completion. Enable with:  eval "$(fontain completion bash)"
@@ -42,8 +63,9 @@ _fontain() {
                 COMPREPLY=($(compgen -W "--no-cache --help" -- "$cur"))
                 return
             fi
-            local IFS=$'\n' font
-            for font in $(command fontain __complete installed 2>/dev/null); do
+            local IFS=$'\n' font kind=installed
+            [[ $cur == *:* ]] && kind=installed-keys
+            for font in $(__HELPER__ __complete $kind 2>/dev/null); do
                 [[ $font == "$cur"* ]] && COMPREPLY+=("$(printf '%q' "$font")")
             done
             # Bash only replaces the text after the last ':' (a word-break
@@ -69,7 +91,11 @@ _fontain() {
     fi
     case $words[2] in
         __REMOVE_PIPE__)
-            fonts=("${(@f)$(command fontain __complete installed 2>/dev/null)}")
+            if [[ $PREFIX == *:* ]]; then
+                fonts=("${(@f)$(__HELPER__ __complete installed-keys 2>/dev/null)}")
+            else
+                fonts=("${(@f)$(__HELPER__ __complete installed 2>/dev/null)}")
+            fi
             _arguments \
                 "--no-cache[don't run fc-cache afterwards]" \
                 '*:installed font:{compadd -a fonts}'
@@ -85,7 +111,7 @@ FISH = r"""# fontain fish completion. Enable with:  fontain completion fish | so
 complete -c fontain -f
 __FISH_COMMANDS__
 set -l __fontain_remove __REMOVE_SPACE__
-complete -c fontain -n "__fish_seen_subcommand_from $__fontain_remove" -a '(command fontain __complete installed 2>/dev/null)' -d 'installed font'
+complete -c fontain -n "__fish_seen_subcommand_from $__fontain_remove" -a '(__HELPER__ __complete installed 2>/dev/null)' -d 'installed font'
 complete -c fontain -n "__fish_seen_subcommand_from $__fontain_remove" -l no-cache -d "don't run fc-cache afterwards"
 """
 
@@ -102,16 +128,16 @@ def script(shell: str, commands: list[tuple[str, str]], remove_names: list[str])
     """
     names = " ".join(n for n, _ in commands)
     if shell == "bash":
-        return (BASH.replace("__COMMANDS__", names)
+        return (BASH.replace("__COMMANDS__", names).replace("__HELPER__", helper_command())
                 .replace("__REMOVE_PIPE__", "|".join(remove_names)))
     if shell == "zsh":
         described = " ".join(_quote_single(f"{n}:{h}") for n, h in commands)
-        return (ZSH.replace("__ZSH_COMMANDS__", described)
+        return (ZSH.replace("__ZSH_COMMANDS__", described).replace("__HELPER__", helper_command())
                 .replace("__REMOVE_PIPE__", "|".join(remove_names)))
     if shell == "fish":
         lines = "\n".join(
             f"complete -c fontain -n __fish_use_subcommand -a {n} -d {_quote_single(h)}" for n, h in commands
         )
-        return (FISH.replace("__FISH_COMMANDS__", lines)
+        return (FISH.replace("__FISH_COMMANDS__", lines).replace("__HELPER__", helper_command())
                 .replace("__REMOVE_SPACE__", " ".join(remove_names)))
     raise ValueError(f"unsupported shell {shell!r}")

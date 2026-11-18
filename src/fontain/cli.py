@@ -128,28 +128,11 @@ def cmd_install(args) -> int:
     return 1 if failures else 0
 
 
-def _installed_key(spec: str, manifest: dict) -> str:
-    source, sep, name = spec.partition(":")
-    if not sep:
-        source, name = "", spec
-    name = name.lower().replace(" ", "")
-    matches = [
-        key for key, rec in manifest.items()
-        if (not source or rec["source"] == source)
-        and name in (rec["id"].lower(), rec["family"].lower().replace(" ", ""))
-    ]
-    if not matches:
-        raise store.StoreError(f"{spec!r} is not installed")
-    if len(matches) > 1:
-        raise store.StoreError(f"{spec!r} is ambiguous: {', '.join(sorted(matches))}")
-    return matches[0]
-
-
 def cmd_remove(args) -> int:
     failures = changed = 0
     for spec in args.fonts:
         try:
-            key = _installed_key(spec, store.load_manifest())
+            key = store.find_installed(spec, store.load_manifest())
             store.remove(key)
             changed += 1
             print(f"Removed {key}")
@@ -278,9 +261,8 @@ def cmd_completion(args) -> int:
 
 
 def cmd_complete(args) -> int:
-    if args.what == "installed":
-        for name in completion.installed_candidates():
-            print(name)
+    for name in completion.installed_candidates(qualified=args.what == "installed-keys"):
+        print(name)
     return 0
 
 
@@ -372,7 +354,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Hidden helper used by the completion scripts (no help= keeps it out of --help).
     s = sub.add_parser("__complete")
-    s.add_argument("what", choices=["installed"])
+    s.add_argument("what", choices=["installed", "installed-keys"])
     s.set_defaults(func=cmd_complete)
     return p
 
