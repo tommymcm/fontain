@@ -17,25 +17,48 @@ class RepoError(Exception):
     pass
 
 
-def load() -> dict[str, dict[str, Any]]:
-    path = paths.config_file()
+def _read_json(path: Path) -> dict[str, Any]:
     try:
         data = json.loads(path.read_text())
     except FileNotFoundError:
         return {}
     except json.JSONDecodeError as e:
-        raise RepoError(f"invalid repository config {path}: {e}") from e
+        raise RepoError(f"invalid config {path}: {e}") from e
     if not isinstance(data, dict):
-        raise RepoError(f"invalid repository config {path}: expected an object")
+        raise RepoError(f"invalid config {path}: expected an object")
     return data
 
 
-def save(repos: dict[str, dict[str, Any]]) -> None:
-    path = paths.config_file()
+def _write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(repos, indent=2) + "\n")
+    tmp.write_text(json.dumps(data, indent=2) + "\n")
     os.replace(tmp, path)
+
+
+def load() -> dict[str, dict[str, Any]]:
+    return _read_json(paths.config_file())
+
+
+def save(repos: dict[str, dict[str, Any]]) -> None:
+    _write_json(paths.config_file(), repos)
+
+
+def preferred() -> str | None:
+    """The source to try first for bare font names (``FONTAIN_PREFER`` overrides)."""
+    if env := os.environ.get("FONTAIN_PREFER"):
+        return env
+    value = _read_json(paths.settings_file()).get("prefer")
+    return value if isinstance(value, str) and value else None
+
+
+def set_preferred(name: str | None) -> None:
+    settings = _read_json(paths.settings_file())
+    if name:
+        settings["prefer"] = name
+    else:
+        settings.pop("prefer", None)
+    _write_json(paths.settings_file(), settings)
 
 
 def parse_spec(spec: str) -> dict[str, str]:

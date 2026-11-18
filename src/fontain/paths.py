@@ -29,5 +29,15 @@ def state_file() -> Path:
     return _xdg("XDG_STATE_HOME", ".local/state") / "fontain" / "installed.json"
 
 
+def config_dir() -> Path:
+    return _xdg("XDG_CONFIG_HOME", ".config") / "fontain"
+
+
 def config_file() -> Path:
-    return _xdg("XDG_CONFIG_HOME", ".config") / "fontain" / "repos.json"
+    """User repositories."""
+    return config_dir() / "repos.json"
+
+
+def settings_file() -> Path:
+    """General preferences, e.g. the preferred source."""
+    return config_dir() / "config.json"

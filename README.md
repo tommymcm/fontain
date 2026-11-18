@@ -45,9 +45,21 @@ fontain install mona:monaspace-static -w 400,700
 fontain repo remove mona                                      # installed fonts are kept
 ```
 
+### Preferred source
+
+By default, a bare name like `fontain install roboto` is looked up in the built-in sources (`fontsource`, `google`, `nerd`) and then in your repos. To try one source first:
+
+```sh
+fontain repo prefer google     # bare names now resolve from google first
+fontain repo prefer            # show the current preference
+fontain repo prefer --clear    # back to the default order
+```
+
+The preferred source's results also come first in search when other sources have the same font. For a single command, set `FONTAIN_PREFER=nerd` to override the preference. The preference is stored in `$XDG_CONFIG_HOME/fontain/config.json`.
+
 - **GitHub repos:** each archive (`.zip`/`.tar.*`) in the latest release becomes one font, with its version stripped from the name (`Inter-4.1.zip` → `inter:Inter`). WOFF/web-font assets are skipped. If the repo has no release, fontain installs the `.ttf`/`.otf` files from the default branch instead.
 - **Local directories:** each subfolder is one font, and its font files can be nested at any depth. Loose files are grouped by the part of the name before the first `-`. The folder is re-scanned every time, so new fonts show up immediately.
-- **Name lookup:** bare names are looked up in the built-in sources first, then in your repos in the order you added them.
+- **Name lookup:** bare names are looked up in your preferred source (if set), then the built-in sources, then your repos in the order you added them.
 - **Duplicate formats:** only one format is installed per font, in the order TTF, then OTF, then TTC, so fontconfig doesn't see duplicates.
 
 Repositories are stored in `$XDG_CONFIG_HOME/fontain/repos.json`.

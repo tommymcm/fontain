@@ -1,7 +1,7 @@
 """Registry of font sources, in bare-name resolution priority order.
 
-Built-in sources come first, followed by user repositories in the order
-they were added.
+The user's preferred source (``fontain repo prefer``) comes first, then the
+built-in sources, then user repositories in the order they were added.
 """
 
 from typing import Any
@@ -35,6 +35,8 @@ def registry() -> dict[str, Source]:
     for name, cfg in repos.load().items():
         if name not in out:
             out[name] = make_source(name, cfg)
+    if (pref := repos.preferred()) in out:
+        out = {pref: out[pref], **{k: v for k, v in out.items() if k != pref}}
     return out
 
 

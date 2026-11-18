@@ -196,9 +196,32 @@ def cmd_cache(args) -> int:
 
 
 def cmd_repo_list(args) -> int:
+    pref = repos.preferred()
     rows = [[name, "built-in", ""] for name in SOURCES]
     rows += [[name, cfg.get("type", "?"), cfg.get("target", "")] for name, cfg in repos.load().items()]
-    table(rows, ["NAME", "TYPE", "LOCATION"])
+    for row in rows:
+        row[0] = ("* " if row[0] == pref else "  ") + row[0]
+    table(rows, ["  NAME", "TYPE", "LOCATION"])
+    if pref:
+        print("\n* preferred for bare font names")
+    return 0
+
+
+def cmd_repo_prefer(args) -> int:
+    if args.clear:
+        repos.set_preferred(None)
+        print("Cleared preferred source; bare names use the default order.")
+        return 0
+    if not args.name:
+        pref = repos.preferred()
+        print(pref or f"(none; default order: {', '.join(SOURCES)}, then your repos)")
+        return 0
+    known = sources.registry()
+    if args.name not in known:
+        err(f"unknown source {args.name!r} (choose from {', '.join(known)})")
+        return 1
+    repos.set_preferred(args.name)
+    print(f"Bare font names now resolve from {args.name!r} first.")
     return 0
 
 
@@ -236,6 +259,9 @@ def cmd_repo_remove(args) -> int:
     repos.save(existing)
     index.drop_cache(args.name)
     print(f"Removed repository {args.name!r}")
+    if repos.preferred() == args.name:
+        repos.set_preferred(None)
+        print("note: it was your preferred source; preference cleared")
     if left := [k for k, rec in store.load_manifest().items() if rec["source"] == args.name]:
         print(f"note: {len(left)} font(s) installed from it remain: {', '.join(left)}")
         print("      remove them with `fontain remove <font>`")
@@ -309,6 +335,15 @@ def build_parser() -> argparse.ArgumentParser:
     s = rsub.add_parser("remove", aliases=["rm"], help="remove a repository (installed fonts are kept)")
     s.add_argument("name")
     s.set_defaults(func=cmd_repo_remove)
+
+    s = rsub.add_parser(
+        "prefer", help="set the source bare font names resolve from first",
+        description="Choose which source `fontain install NAME` tries first. "
+        "With no NAME, print the current preference.",
+    )
+    s.add_argument("name", nargs="?", help="a built-in source or one of your repositories")
+    s.add_argument("--clear", action="store_true", help="go back to the default order")
+    s.set_defaults(func=cmd_repo_prefer)
     return p
 
 
