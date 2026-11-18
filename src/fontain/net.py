@@ -16,7 +16,9 @@ TIMEOUT = 60
 
 
 class NetError(Exception):
-    pass
+    def __init__(self, msg: str, status: int | None = None):
+        super().__init__(msg)
+        self.status = status
 
 
 def _request(url: str) -> urllib.request.Request:
@@ -34,7 +36,7 @@ def _open(url: str):
         hint = ""
         if e.code in (403, 429) and "api.github.com" in url:
             hint = " (GitHub rate limit? set GITHUB_TOKEN)"
-        raise NetError(f"HTTP {e.code} fetching {url}{hint}") from e
+        raise NetError(f"HTTP {e.code} fetching {url}{hint}", e.code) from e
     except (urllib.error.URLError, TimeoutError) as e:
         raise NetError(f"could not fetch {url}: {getattr(e, 'reason', e)}") from e
 

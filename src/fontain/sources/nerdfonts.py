@@ -1,18 +1,16 @@
 """Nerd Fonts (https://www.nerdfonts.com), from GitHub release tarballs."""
 
 import hashlib
-import tarfile
 import tempfile
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Any
 
 from fontain import net
+from fontain.sources.archives import extract_fonts
 from fontain.sources.base import FontEntry, Selection, SourceError
-from fontain.sources.google import parse_filename
 
 RELEASE = "https://api.github.com/repos/ryanoasis/nerd-fonts/releases/latest"
 SUFFIX = ".tar.xz"
-FONT_EXTS = (".ttf", ".otf")
 
 
 def parse_index(release: dict[str, Any]) -> list[FontEntry]:
@@ -51,29 +49,6 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def extract_fonts(archive: Path, dest: Path, sel: Selection) -> list[Path]:
-    """Extract only regular font files, flattened to their basename.
-
-    Flattening means no member path can escape ``dest``.
-    """
-    written = []
-    with tarfile.open(archive, "r:xz") as tar:
-        for member in tar:
-            base = PurePosixPath(member.name).name
-            if not member.isfile() or not base.lower().endswith(FONT_EXTS) or base.startswith("."):
-                continue
-            if not sel.wants(*parse_filename(base)):
-                continue
-            src = tar.extractfile(member)
-            if src is None:
-                continue
-            target = dest / base
-            with src, target.open("wb") as out:
-                out.write(src.read())
-            written.append(target)
-    return written
 
 
 class NerdFontsSource:

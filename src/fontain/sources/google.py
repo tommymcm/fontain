@@ -88,7 +88,7 @@ class GoogleSource:
             try:
                 return lic, net.get_json(CONTENTS.format(f"{lic}/{entry.id}"))
             except net.NetError as e:
-                if "HTTP 404" not in str(e):
+                if e.status != 404:
                     raise
         raise SourceError(f"could not find {entry.family} in the google/fonts repository")
 
