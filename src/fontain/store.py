@@ -84,10 +84,9 @@ def remove(key: str) -> bool:
     target = font_dir(record["source"], record["id"])
     if target.exists():
         shutil.rmtree(target)
-    for parent in (target.parent,):
-        try:
-            parent.rmdir()  # drop empty source dir
-        except OSError:
-            pass
+    try:
+        target.parent.rmdir()  # drop the source dir once it is empty
+    except OSError:
+        pass
     save_manifest(manifest)
     return True
