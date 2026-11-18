@@ -218,37 +218,98 @@ def uninstall(shell: str) -> Path | None:
     return path
 
 
-def _setup_marker() -> Path:
-    return paths.state_file().parent / "completion-setup"
+# --- ask-on-first-Tab (bash) -------------------------------------------------
+#
+# bash-completion looks for a completion file next to the command's real path
+# (<prefix>/share/bash-completion/completions/<cmd>) the first time you press
+# Tab. fontain ships TAB_LOADER there. It enables nothing by itself: on that
+# first Tab it asks, remembers the answer, and only then loads completion.
+
+TAB_LOADER_RELPATH = Path("share/bash-completion/completions/fontain")
+
+TAB_LOADER = r"""# fontain: bash completion loader, shipped with the fontain package.
+# bash-completion sources this on the first <Tab> after `fontain`. Nothing is
+# enabled until you say yes; the answer is remembered (change it with
+# `fontain completion --install`, `--uninstall` or `--reset`).
+
+_fontain_py=${BASH_SOURCE[0]%/share/bash-completion/completions/*}/bin/python
+
+_fontain_off() { :; }  # declined: no suggestions, fall back to filenames
+
+_fontain_ask() {
+    local reply ps tty=${_FONTAIN_TTY:-/dev/tty}
+    {
+        printf '\nfontain: enable tab completion for fontain? [Y/n] '
+        read -r -n 1 reply
+        printf '%s\n' "${reply//[$'\r\n']/}"
+    } <"$tty" >>"$tty" 2>&1
+    if [[ $reply == [nN] ]]; then
+        "$_fontain_py" -m fontain __complete decline >/dev/null 2>&1
+        printf 'fontain: OK, not asking again. Enable later with `fontain completion --install`.\n' >>"$tty"
+        complete -o bashdefault -o default -F _fontain_off fontain
+    else
+        "$_fontain_py" -m fontain __complete accept >/dev/null 2>&1
+        eval "$("$_fontain_py" -m fontain completion bash 2>/dev/null)"
+    fi
+    # Readline still thinks the cursor is on the original line: redraw it.
+    ps=${PS1@P}
+    printf '%s%s' "${ps##*$'\n'}" "$COMP_LINE" >>"$tty"
+    COMPREPLY=()
+    if declare -F _fontain >/dev/null; then
+        _fontain "$@"
+    fi
+}
+
+case $("$_fontain_py" -m fontain __complete consent 2>/dev/null) in
+    yes) eval "$("$_fontain_py" -m fontain completion bash 2>/dev/null)" ;;
+    no) complete -o bashdefault -o default -F _fontain_off fontain ;;
+    *) complete -F _fontain_ask fontain ;;
+esac
+"""
 
 
-def _interactive() -> bool:
-    return sys.stderr.isatty()
+def _consent_file() -> Path:
+    return paths.state_file().parent / "completion"
 
 
-def auto_setup() -> None:
-    """On the first interactive run, enable completion for the user's shell.
-
-    Only ever writes into the shell's own autoload directory (never rc files),
-    runs once, and is skipped when FONTAIN_NO_COMPLETION_SETUP is set.
-    """
-    if os.environ.get("FONTAIN_NO_COMPLETION_SETUP") or not _interactive():
-        return
-    marker = _setup_marker()
-    if marker.exists():
-        return
-    shell = detect_shell()
+def get_consent() -> str:
+    """``yes``, ``no`` or ``ask`` (never answered)."""
     try:
-        if shell in AUTOLOAD_SHELLS and not is_installed(shell):
-            path = install(shell)
-            msg = f"fontain: enabled {shell} tab completion ({path}); it takes effect in new shells."
-            if shell == "bash" and not bash_completion_available():
-                msg += " It needs the bash-completion package."
-            print(msg + " Undo with `fontain completion --uninstall`.", file=sys.stderr)
-        elif shell == "zsh":
-            print('fontain: for tab completion, add `eval "$(fontain completion zsh)"` to ~/.zshrc',
-                  file=sys.stderr)
-        marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.write_text(f"{shell or 'unknown'}\n")
-    except (OSError, CompletionError):
-        pass  # never let completion setup get in the way of the actual command
+        value = _consent_file().read_text().strip()
+    except FileNotFoundError:
+        return "ask"
+    return value if value in ("yes", "no") else "ask"
+
+
+def set_consent(value: str | None) -> None:
+    path = _consent_file()
+    if value is None:
+        path.unlink(missing_ok=True)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(value + "\n")
+
+
+def tab_loader_path() -> Path | None:
+    """Where bash-completion will look for fontain's loader, if we're in a venv."""
+    if sys.prefix == sys.base_prefix:
+        return None  # system/user site install: don't write into a shared prefix
+    return Path(sys.prefix) / TAB_LOADER_RELPATH
+
+
+def ensure_tab_loader() -> None:
+    """Make sure the loader exists in fontain's own install prefix.
+
+    Normal installs ship it as package data; editable installs don't, so put
+    it there ourselves. Never touches the user's own config or rc files.
+    """
+    path = tab_loader_path()
+    if path is None:
+        return
+    try:
+        if path.exists() and path.read_text() == TAB_LOADER:
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(TAB_LOADER)
+    except OSError:
+        pass

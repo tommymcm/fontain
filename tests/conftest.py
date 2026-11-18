@@ -10,7 +10,10 @@ def isolated_dirs(monkeypatch, tmp_path):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
     monkeypatch.delenv("BASH_COMPLETION_USER_DIR", raising=False)
-    monkeypatch.setenv("FONTAIN_NO_COMPLETION_SETUP", "1")
+    # never write the Tab loader into the real venv
+    from fontain import completion
+
+    monkeypatch.setattr(completion, "tab_loader_path", lambda: tmp_path / "prefix" / completion.TAB_LOADER_RELPATH)
     return tmp_path
 
 

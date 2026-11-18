@@ -19,3 +19,7 @@ dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.uv.build-backend]
+# Ships the bash ask-on-first-Tab loader to <prefix>/share/bash-completion/completions/fontain
+data = { data = "data" }

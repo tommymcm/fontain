@@ -70,18 +70,24 @@ Fonts can be named by id (`roboto-mono`), by family (`"Roboto Mono"`), or with a
 
 Pressing Tab after `fontain remove` (or `uninstall`/`rm`) suggests the fonts fontain has installed, one name per font. Every suggestion is accepted by `remove`: it's the bare id, or `source:id` when the bare id is ambiguous. Type `source:` to complete fully qualified names. Subcommand names complete too.
 
-**Setup is automatic for bash and fish.** The first time you run `fontain` in a terminal, it puts a small loader in your shell's own completion folder:
+**bash asks the first time you press Tab after `fontain`:**
 
-- bash: `~/.local/share/bash-completion/completions/fontain` (needs the `bash-completion` package, which most distros install by default)
-- fish: `~/.config/fish/completions/fontain.fish`
+```
+$ fontain remove <Tab>
+fontain: enable tab completion for fontain? [Y/n] y
+$ fontain remove <Tab><Tab>
+atkinson-hyperlegible  inter  JetBrainsMono
+```
 
-fontain doesn't edit `~/.bashrc` or any other rc file. Completion starts working in new shells. The loader regenerates the script each time a shell loads it, so upgrades are picked up automatically.
+fontain doesn't install anything into your home directory or rc files to make this work. The package ships a small loader in its own install folder (`<venv>/share/bash-completion/completions/fontain`), and `bash-completion` finds it there on the first Tab. Your answer is remembered. If you say no, Tab falls back to normal filename completion and you're never asked again.
 
 ```sh
-fontain completion --install      # do it yourself (shell detected from $SHELL)
-fontain completion --uninstall    # remove it; first-run setup won't add it back
-export FONTAIN_NO_COMPLETION_SETUP=1   # disable the first-run setup
+fontain completion --install      # turn it on (fish: installs ~/.config/fish/completions/fontain.fish)
+fontain completion --uninstall    # turn it off, don't ask again
+fontain completion --reset        # forget the answer; ask on the next Tab
 ```
+
+The prompt needs the `bash-completion` package (installed by default on most distros) and fontain installed with `uv tool install` or `pipx`. If you also have `eval "$(fontain completion bash)"` in `~/.bashrc`, that line turns completion on directly and you won't see the prompt.
 
 **zsh** has no per-user completion folder, so add this to `~/.zshrc` (after `compinit`):
 
@@ -89,7 +95,7 @@ export FONTAIN_NO_COMPLETION_SETUP=1   # disable the first-run setup
 eval "$(fontain completion zsh)"
 ```
 
-Completion is attached to the `fontain` command, so install fontain with `uv tool install` or `pipx` rather than running it through `uv run`.
+When several fonts match, readline first completes the part they have in common and beeps, and a second Tab lists them all. To get the list on the first Tab, add `set show-all-if-ambiguous on` to `~/.inputrc`. This setting applies to all commands, not just fontain.
 
 ## Where things go
 

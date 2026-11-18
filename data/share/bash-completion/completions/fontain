@@ -1,0 +1,38 @@
+# fontain: bash completion loader, shipped with the fontain package.
+# bash-completion sources this on the first <Tab> after `fontain`. Nothing is
+# enabled until you say yes; the answer is remembered (change it with
+# `fontain completion --install`, `--uninstall` or `--reset`).
+
+_fontain_py=${BASH_SOURCE[0]%/share/bash-completion/completions/*}/bin/python
+
+_fontain_off() { :; }  # declined: no suggestions, fall back to filenames
+
+_fontain_ask() {
+    local reply ps tty=${_FONTAIN_TTY:-/dev/tty}
+    {
+        printf '\nfontain: enable tab completion for fontain? [Y/n] '
+        read -r -n 1 reply
+        printf '%s\n' "${reply//[$'\r\n']/}"
+    } <"$tty" >>"$tty" 2>&1
+    if [[ $reply == [nN] ]]; then
+        "$_fontain_py" -m fontain __complete decline >/dev/null 2>&1
+        printf 'fontain: OK, not asking again. Enable later with `fontain completion --install`.\n' >>"$tty"
+        complete -o bashdefault -o default -F _fontain_off fontain
+    else
+        "$_fontain_py" -m fontain __complete accept >/dev/null 2>&1
+        eval "$("$_fontain_py" -m fontain completion bash 2>/dev/null)"
+    fi
+    # Readline still thinks the cursor is on the original line: redraw it.
+    ps=${PS1@P}
+    printf '%s%s' "${ps##*$'\n'}" "$COMP_LINE" >>"$tty"
+    COMPREPLY=()
+    if declare -F _fontain >/dev/null; then
+        _fontain "$@"
+    fi
+}
+
+case $("$_fontain_py" -m fontain __complete consent 2>/dev/null) in
+    yes) eval "$("$_fontain_py" -m fontain completion bash 2>/dev/null)" ;;
+    no) complete -o bashdefault -o default -F _fontain_off fontain ;;
+    *) complete -F _fontain_ask fontain ;;
+esac

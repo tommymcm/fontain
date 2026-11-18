@@ -256,13 +256,26 @@ def cmd_completion(args) -> int:
     commands = [(a.dest, a.help or "") for a in sub._choices_actions]
     remove = sub.choices["remove"]
     remove_names = [name for name, parser in sub.choices.items() if parser is remove]
+    if args.reset:
+        completion.set_consent(None)
+        for shell in completion.AUTOLOAD_SHELLS:
+            try:
+                completion.uninstall(shell)
+            except completion.CompletionError:
+                pass  # not ours; leave it alone
+        print("Reset: you'll be asked about tab completion the next time you press Tab after `fontain`.")
+        return 0
     if args.install or args.uninstall:
         shell = args.shell or completion.detect_shell()
         if not shell:
             err("couldn't detect your shell from $SHELL; pass it explicitly, e.g. `--install bash`")
             return 2
-        if args.install:
+        if args.install and shell == "bash" and (loader := completion.tab_loader_path()) and loader.exists():
+            completion.set_consent("yes")
+            print("Enabled bash tab completion. It takes effect in new shells.")
+        elif args.install:
             path = completion.install(shell)
+            completion.set_consent("yes")
             print(f"Installed {shell} completion: {path}")
             print("It takes effect in new shells.")
             if shell == "bash" and not completion.bash_completion_available():
@@ -270,7 +283,9 @@ def cmd_completion(args) -> int:
                       "(e.g. `dnf install bash-completion` / `apt install bash-completion`)")
         else:
             path = completion.uninstall(shell)
-            print(f"Removed {path}" if path else f"No fontain {shell} completion was installed.")
+            completion.set_consent("no")
+            print(f"Removed {path}." if path else f"Disabled {shell} tab completion.")
+            print("It takes effect in new shells; you won't be asked again.")
         return 0
     if not args.shell:
         err("specify a shell (bash, zsh, fish), or use --install")
@@ -280,8 +295,16 @@ def cmd_completion(args) -> int:
 
 
 def cmd_complete(args) -> int:
-    for name in completion.installed_candidates(qualified=args.what == "installed-keys"):
-        print(name)
+    match args.what:
+        case "consent":
+            print(completion.get_consent())
+        case "accept":
+            completion.set_consent("yes")
+        case "decline":
+            completion.set_consent("no")
+        case _:
+            for name in completion.installed_candidates(qualified=args.what == "installed-keys"):
+                print(name)
     return 0
 
 
@@ -364,20 +387,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser(
         "completion", help="set up shell tab completion",
-        description="fontain enables bash/fish completion automatically on first run. "
-        "Use --install/--uninstall to manage it yourself, or print the script for SHELL "
+        description="In bash, fontain asks the first time you press Tab after `fontain`. "
+        "Use --install/--uninstall to change your answer (or set it up for fish), "
+        "--reset to be asked again, or print the script for SHELL "
         '(for zsh: add eval "$(fontain completion zsh)" to ~/.zshrc).',
     )
     s.add_argument("shell", nargs="?", choices=completion.SHELLS, help="default for --install: from $SHELL")
     mode = s.add_mutually_exclusive_group()
     mode.add_argument("--install", action="store_true",
                       help="install into the shell's completion directory (bash, fish)")
-    mode.add_argument("--uninstall", action="store_true", help="remove what --install added")
+    mode.add_argument("--uninstall", action="store_true", help="disable completion and don't ask again")
+    mode.add_argument("--reset", action="store_true", help="forget your answer; ask again on the next Tab")
     s.set_defaults(func=cmd_completion, parser=p)
 
     # Hidden helper used by the completion scripts (no help= keeps it out of --help).
     s = sub.add_parser("__complete")
-    s.add_argument("what", choices=["installed", "installed-keys"])
+    s.add_argument("what", choices=["installed", "installed-keys", "consent", "accept", "decline"])
     s.set_defaults(func=cmd_complete)
     return p
 
@@ -392,6 +417,5 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (store.StoreError, repos.RepoError, SourceError, completion.CompletionError) as e:
         err(str(e))
         return 1
-    if args.func not in (cmd_completion, cmd_complete):
-        completion.auto_setup()
+    completion.ensure_tab_loader()
     return rc
