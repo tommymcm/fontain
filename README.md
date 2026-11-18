@@ -1,6 +1,6 @@
-# fontain ⛲
+![fontain](docs/images/fontain-pixel.png)
 
-A simple tool to install and manage fonts on unix systems from public repositories.
+`fontain` is a simple tool to install and manage fonts on unix systems from public repositories.
 
 - **Sources:** [Fontsource](https://fontsource.org), [Google Fonts](https://github.com/google/fonts) and [Nerd Fonts](https://www.nerdfonts.com), plus your own GitHub repos and local folders
 - **No root needed:** fonts are installed to your user font directory
