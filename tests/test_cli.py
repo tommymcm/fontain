@@ -1,6 +1,6 @@
 import pytest
 
-from fontain import cli, fontcache, index, store
+from fontain import cli, fontcache, sources, store
 from fontain.sources.base import FontEntry
 
 
@@ -19,8 +19,7 @@ class FakeSource:
 
 @pytest.fixture
 def fake(monkeypatch):
-    monkeypatch.setattr(cli, "SOURCES", {"fake": FakeSource()})
-    monkeypatch.setattr(index, "SOURCES", {"fake": FakeSource()})
+    monkeypatch.setattr(sources, "registry", lambda: {"fake": FakeSource()})
     calls = []
     monkeypatch.setattr(fontcache, "refresh", lambda root, quiet=False: calls.append(root) or True)
     return calls

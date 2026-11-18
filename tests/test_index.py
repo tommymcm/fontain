@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from fontain import index, net, paths
+from fontain import index, net, paths, sources
 from fontain.sources.base import FontEntry
 
 
@@ -58,7 +58,7 @@ def test_load_uses_cache_and_stale_fallback(monkeypatch):
                 raise net.NetError("offline")
             return [E("fontsource", "inter")]
 
-    monkeypatch.setitem(index.SOURCES, "fontsource", Src())
+    monkeypatch.setattr(sources, "registry", lambda: {"fontsource": Src()})
     assert [e.id for e in index.load("fontsource")] == ["inter"]
     assert [e.id for e in index.load("fontsource")] == ["inter"]
     assert len(calls) == 1  # second load came from cache

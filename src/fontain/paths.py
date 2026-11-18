@@ -27,3 +27,7 @@ def cache_dir() -> Path:
 
 def state_file() -> Path:
     return _xdg("XDG_STATE_HOME", ".local/state") / "fontain" / "installed.json"
+
+
+def config_file() -> Path:
+    return _xdg("XDG_CONFIG_HOME", ".config") / "fontain" / "repos.json"
