@@ -2,26 +2,33 @@
 
 `fontain` is a simple tool to install and manage fonts on unix systems from public repositories.
 
-It installs from [Fontsource](https://fontsource.org), [Google Fonts](https://github.com/google/fonts), [Nerd Fonts](https://www.nerdfonts.com), or your own GitHub repos and folders. Fonts go into your user font directory (no root needed), and the font cache is refreshed for you.
+It installs from [Fontsource](https://fontsource.org), [Google Fonts](https://github.com/google/fonts), [Nerd Fonts](https://www.nerdfonts.com), or your own GitHub repos and folders. Fonts are installed into your user font directory, and the font cache is refreshed for you.
 
-## Install
+## Installation
+
+Quick start with `uv`:
 
 ```sh
 uv tool install git+https://github.com/tommymcm/fontain
 ```
 
+Or, install from a local checkout with `pipx install .` or `uv tool install .`
+
+
 ## Usage
 
 ```sh
-fontain search roboto                   # find fonts
+fontain search roboto                   # search for fonts
 fontain info inter                      # details about a font
-fontain install inter                   # install by name
-fontain install google:lato -w 400,700  # pick a source and weights
-fontain list                            # installed fonts
-fontain remove inter                    # uninstall
+fontain install inter                   # install font by name
+fontain install google:lato -w 400,700  # pick a source repo, and weights
+fontain list                            # list installed fonts
+fontain remove inter                    # uninstall a font
 ```
 
-### Your own repositories
+Run `fontain` with no arguments for an interactive shell, where each line is a command (`search roboto`, `install inter`, ...) with tab completion and history.
+
+### Add your own repositories
 
 ```sh
 fontain repo add mona github:githubnext/monaspace  # a GitHub repo

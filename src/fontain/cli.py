@@ -4,7 +4,7 @@ import argparse
 import sys
 from collections.abc import Sequence
 
-from fontain import __version__, completion, fontcache, index, net, paths, repos, sources, store
+from fontain import __version__, completion, fontcache, index, net, paths, repl, repos, sources, store
 from fontain.sources import SOURCES, Selection, SourceError
 
 
@@ -400,6 +400,9 @@ def build_parser() -> argparse.ArgumentParser:
     mode.add_argument("--reset", action="store_true", help="forget your answer; ask again on the next Tab")
     s.set_defaults(func=cmd_completion, parser=p)
 
+    s = sub.add_parser("shell", help="interactive shell (also: run `fontain` with no arguments)")
+    s.set_defaults(func=cmd_shell)
+
     # Hidden helper used by the completion scripts (no help= keeps it out of --help).
     s = sub.add_parser("__complete")
     s.add_argument("what", choices=["installed", "installed-keys", "consent", "accept", "decline"])
@@ -407,7 +410,39 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def cmd_shell(args) -> int:
+    return start_shell()
+
+
+def start_shell() -> int:
+    parser = build_parser()
+    sub = parser._subparsers._group_actions[0]
+    commands = [name for name in sub.choices if name not in repl.HIDDEN]
+    repo_sub = sub.choices["repo"]._subparsers._group_actions[0]
+    subcommands = {"repo": list(repo_sub.choices)}
+
+    def help_text(cmd: str | None) -> None:
+        if cmd is None:
+            rows = [[a.dest, a.help or ""] for a in sub._choices_actions if a.dest not in repl.HIDDEN]
+            rows += [["help [command]", "show commands, or a command's options"], ["exit", "leave the shell"]]
+            table(rows, ["COMMAND", "DESCRIPTION"])
+        elif cmd in sub.choices and cmd not in repl.HIDDEN:
+            sub.choices[cmd].print_help()
+        else:
+            err(f"unknown command {cmd!r}")
+
+    return repl.repl(run, help_text, repl.Completer(commands, subcommands))
+
+
 def main(argv: Sequence[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else list(argv)
+    if not argv and sys.stdin.isatty() and sys.stdout.isatty():
+        return start_shell()
+    return run(argv)
+
+
+def run(argv: Sequence[str]) -> int:
+    """Run one command line. argparse errors raise SystemExit (callers decide)."""
     args = build_parser().parse_args(argv)
     try:
         rc = args.func(args)

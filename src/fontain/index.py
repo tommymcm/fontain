@@ -123,3 +123,11 @@ def resolve(spec: str, indexes: dict[str, list[FontEntry]]) -> Resolved:
     if not hits:
         raise ResolveError(f"no font named {spec!r}; try `fontain search {spec}`")
     return Resolved(hits[0], hits[1:])
+
+
+def cached_ids(source: str) -> list[str]:
+    """Font ids from the on-disk cache only (never fetches); for completion."""
+    try:
+        return [d["id"] for d in json.loads(_cache_path(source).read_text())]
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
