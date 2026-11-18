@@ -68,8 +68,10 @@ def search(entries: list[FontEntry], query: str) -> list[FontEntry]:
             return 2
         return None
 
+    priority = {name: i for i, name in enumerate(SOURCES)}
     scored = [(r, e) for e in entries if (r := rank(e)) is not None]
-    scored.sort(key=lambda t: (t[0], len(t[1].id), t[1].id.lower()))
+    # Same family from different sources sorts together, in source priority order.
+    scored.sort(key=lambda t: (t[0], len(t[1].family), t[1].family.lower(), priority.get(t[1].source, 99)))
     return [e for _, e in scored]
 
 

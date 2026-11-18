@@ -20,7 +20,7 @@ def refresh(root: Path, quiet: bool = False) -> bool:
         return False
     root.mkdir(parents=True, exist_ok=True)
     if not quiet:
-        print("Updating font cache...", file=sys.stderr)
+        print("Updating font cache...", flush=True)
     result = subprocess.run([exe, "-f", str(root)], capture_output=True, text=True)
     if result.returncode != 0:
         print(f"warning: fc-cache failed: {result.stderr.strip()}", file=sys.stderr)
