@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass
 
 from fontain import net, paths
-from fontain.sources import SOURCES, FontEntry
+from fontain.sources import SOURCES, FontEntry, SourceError
 
 TTL_SECONDS = 24 * 3600
 
@@ -18,6 +18,8 @@ def _cache_path(source: str):
 
 def refresh(source: str) -> list[FontEntry]:
     entries = SOURCES[source].fetch_index()
+    if not getattr(SOURCES[source], "cacheable", True):
+        return entries
     path = _cache_path(source)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
@@ -31,6 +33,8 @@ def load(source: str, max_age: float = TTL_SECONDS) -> list[FontEntry]:
 
     If fetching fails but an old cache exists, the stale copy is used.
     """
+    if not getattr(SOURCES[source], "cacheable", True):
+        return SOURCES[source].fetch_index()
     path = _cache_path(source)
     fresh = path.exists() and time.time() - path.stat().st_mtime < max_age
     if not fresh:
@@ -50,7 +54,7 @@ def load_many(sources: list[str]) -> dict[str, list[FontEntry]]:
     for name in sources:
         try:
             out[name] = load(name)
-        except (net.NetError, ValueError, KeyError) as e:
+        except (net.NetError, SourceError, OSError, ValueError, KeyError) as e:
             print(f"warning: skipping {name}: {e}", file=sys.stderr)
     return out
 
