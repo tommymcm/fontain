@@ -39,7 +39,9 @@ def _png(rows, filter_type):
         return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body))
 
     ihdr = struct.pack(">IIBBBBB", len(rows[0]), len(rows), 8, 6, 0, 0, 0)
-    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
+    return (
+        b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
+    )
 
 
 def test_decoder_filter_none():
@@ -56,9 +58,9 @@ def test_render_cells():
     red, blue = (255, 0, 0, 255), (0, 0, 255, 255)
     out = logo.render([[red, red, CLEAR, CLEAR], [blue, CLEAR, blue, CLEAR]])
     assert "\x1b[38;2;255;0;0m\x1b[48;2;0;0;255m▀" in out  # top red over bottom blue
-    assert "\x1b[49m\x1b[38;2;255;0;0m▀" in out            # top only
-    assert "\x1b[49m\x1b[38;2;0;0;255m▄" in out            # bottom only
-    assert out.endswith("\x1b[0m") and "\n" not in out     # transparent right edge trimmed
+    assert "\x1b[49m\x1b[38;2;255;0;0m▀" in out  # top only
+    assert "\x1b[49m\x1b[38;2;0;0;255m▄" in out  # bottom only
+    assert out.endswith("\x1b[0m") and "\n" not in out  # transparent right edge trimmed
 
 
 def test_render_256():
@@ -72,13 +74,16 @@ def test_banner_fits_terminal(columns, lines):
     assert (None if out is None else len(out.splitlines())) == lines
 
 
-@pytest.mark.parametrize("env,mode", [
-    (TRUE, "truecolor"),
-    ({"TERM": "xterm-256color"}, "256"),
-    ({"TERM": "xterm"}, None),
-    ({"TERM": "dumb", "COLORTERM": "truecolor"}, None),
-    ({**TRUE, "NO_COLOR": "1"}, None),
-])
+@pytest.mark.parametrize(
+    "env,mode",
+    [
+        (TRUE, "truecolor"),
+        ({"TERM": "xterm-256color"}, "256"),
+        ({"TERM": "xterm"}, None),
+        ({"TERM": "dumb", "COLORTERM": "truecolor"}, None),
+        ({**TRUE, "NO_COLOR": "1"}, None),
+    ],
+)
 def test_color_mode(env, mode):
     assert logo.color_mode(env) == mode
     assert (logo.banner(200, env) is None) == (mode is None)

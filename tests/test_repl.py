@@ -15,35 +15,48 @@ def _session(monkeypatch, lines):
 
     monkeypatch.setattr(repl, "_setup_readline", lambda completer: None)
     real = repl.repl
-    monkeypatch.setattr(repl, "repl",
-                        lambda run, help_text, completer, logo=None: real(run, help_text, completer, read=read, logo=logo))
+    monkeypatch.setattr(
+        repl,
+        "repl",
+        lambda run, help_text, completer, logo=None: real(run, help_text, completer, read=read, logo=logo),
+    )
     return cli.main(["shell"])
 
 
 @pytest.fixture
 def installed(monkeypatch):
     monkeypatch.setattr(fontcache, "refresh", lambda root, quiet=False: True)
-    store.save_manifest({
-        k: {"source": k.split(":")[0], "id": k.split(":")[1], "family": k.split(":")[1],
-            "files": [], "installed": ""}
-        for k in ("fontsource:inter", "fontsource:inter-tight", "nerd:JetBrainsMono")
-    })
+    store.save_manifest(
+        {
+            k: {
+                "source": k.split(":")[0],
+                "id": k.split(":")[1],
+                "family": k.split(":")[1],
+                "files": [],
+                "installed": "",
+            }
+            for k in ("fontsource:inter", "fontsource:inter-tight", "nerd:JetBrainsMono")
+        }
+    )
 
 
 def test_commands_run_and_errors_dont_exit(monkeypatch, capsys, installed):
-    rc = _session(monkeypatch, [
-        "list",
-        "",                         # blank line
-        "list --bogus",             # argparse error -> stays in shell
-        "frobnicate",               # unknown command
-        "install 'unterminated",    # shlex error
-        "search --help",            # --help -> stays in shell
-        "fontain remove inter",     # habitual prefix tolerated
-        KeyboardInterrupt,          # Ctrl-C at the prompt clears the line
-        "list",
-        "exit",
-        "list",                     # never reached
-    ])
+    rc = _session(
+        monkeypatch,
+        [
+            "list",
+            "",  # blank line
+            "list --bogus",  # argparse error -> stays in shell
+            "frobnicate",  # unknown command
+            "install 'unterminated",  # shlex error
+            "search --help",  # --help -> stays in shell
+            "fontain remove inter",  # habitual prefix tolerated
+            KeyboardInterrupt,  # Ctrl-C at the prompt clears the line
+            "list",
+            "exit",
+            "list",  # never reached
+        ],
+    )
     out, errors = capsys.readouterr()
     assert rc == 0
     assert out.count("nerd:JetBrainsMono") == 2  # both `list`s ran
@@ -112,7 +125,7 @@ def test_readline_hook_appends_space(completer, monkeypatch):
 
 def test_complete_commands(completer):
     assert completer.candidates("re") == ["refresh", "remove", "repo"]
-    assert completer.candidates("") [:3] == ["add", "cache", "completion"]
+    assert completer.candidates("")[:3] == ["add", "cache", "completion"]
     assert "exit" in completer.candidates("") and "__complete" not in completer.candidates("")
     assert completer.candidates("help ins") == ["install"]
     assert completer.candidates("repo p") == ["prefer"]
@@ -120,8 +133,12 @@ def test_complete_commands(completer):
 
 def test_complete_remove(completer, installed):
     assert completer.candidates("remove ") == [
-        "fontsource:inter", "fontsource:inter-tight", "inter", "inter-tight",
-        "JetBrainsMono", "nerd:JetBrainsMono",
+        "fontsource:inter",
+        "fontsource:inter-tight",
+        "inter",
+        "inter-tight",
+        "JetBrainsMono",
+        "nerd:JetBrainsMono",
     ]
     assert completer.candidates("rm inter-") == ["inter-tight"]
     assert completer.candidates("remove nerd:") == ["nerd:JetBrainsMono"]
@@ -146,13 +163,27 @@ def test_complete_install_from_cache_only(completer, monkeypatch):
 
 
 def test_spaces_escaped(completer):
-    store.save_manifest({"work:Acme Sans": {"source": "work", "id": "Acme Sans", "family": "Acme Sans",
-                                            "files": [], "installed": ""}})
+    store.save_manifest(
+        {
+            "work:Acme Sans": {
+                "source": "work",
+                "id": "Acme Sans",
+                "family": "Acme Sans",
+                "files": [],
+                "installed": "",
+            }
+        }
+    )
     assert completer.candidates("remove Ac") == ["Acme\\ Sans"]
 
 
 def test_logo_has_blank_line_above_and_below(capsys):
-    repl.repl(lambda argv: 0, lambda cmd: None, repl.Completer([], {}),
-              read=lambda prompt: (_ for _ in ()).throw(EOFError), logo="LOGO1\nLOGO2")
+    repl.repl(
+        lambda argv: 0,
+        lambda cmd: None,
+        repl.Completer([], {}),
+        read=lambda prompt: (_ for _ in ()).throw(EOFError),
+        logo="LOGO1\nLOGO2",
+    )
     out = capsys.readouterr().out
     assert out.startswith("\nLOGO1\nLOGO2\n\nfontain ")

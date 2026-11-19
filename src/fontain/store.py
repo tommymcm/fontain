@@ -52,7 +52,8 @@ def find_installed(spec: str, manifest: dict[str, dict[str, Any]]) -> str:
         source, name = "", spec
     name = name.lower().replace(" ", "")
     matches = [
-        key for key, rec in manifest.items()
+        key
+        for key, rec in manifest.items()
         if (not source or rec["source"] == source)
         and name in (rec["id"].lower().replace(" ", ""), rec["family"].lower().replace(" ", ""))
     ]

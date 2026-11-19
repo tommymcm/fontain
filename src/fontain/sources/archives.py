@@ -23,7 +23,8 @@ def pick_fonts(paths: Iterable[str], sel: Selection = Selection()) -> list[str]:
     hidden/macOS metadata files and drops duplicate basenames (first wins).
     """
     candidates = [
-        p for p in paths
+        p
+        for p in paths
         if not any(part.startswith(".") or part == "__MACOSX" for part in PurePosixPath(p).parts)
     ]
     for ext in FORMAT_PREFERENCE:

@@ -8,10 +8,21 @@ def _asset(name):
 
 
 def test_parse_release_archives():
-    release = {"tag_name": "v4.1", "assets": [_asset(n) for n in (
-        "Inter-4.1.zip", "Fira_Code_v6.2.zip", "monaspace-static-v1.400.zip",
-        "monaspace-webfont-static-v1.400.zip", "WOFF2-thing.zip", "checksums.txt", "3270.tar.xz",
-    )]}
+    release = {
+        "tag_name": "v4.1",
+        "assets": [
+            _asset(n)
+            for n in (
+                "Inter-4.1.zip",
+                "Fira_Code_v6.2.zip",
+                "monaspace-static-v1.400.zip",
+                "monaspace-webfont-static-v1.400.zip",
+                "WOFF2-thing.zip",
+                "checksums.txt",
+                "3270.tar.xz",
+            )
+        ],
+    }
     entries = parse_release("mine", "o/r", release)
     assert [e.id for e in entries] == ["Inter", "Fira_Code", "monaspace-static", "3270"]
     assert entries[0].key == "mine:Inter"
@@ -19,7 +30,10 @@ def test_parse_release_archives():
 
 
 def test_parse_release_loose_files():
-    release = {"tag_name": "1.0", "assets": [_asset(n) for n in ("X-Regular.ttf", "X-Bold.ttf", "X-Bold.otf")]}
+    release = {
+        "tag_name": "1.0",
+        "assets": [_asset(n) for n in ("X-Regular.ttf", "X-Bold.ttf", "X-Bold.otf")],
+    }
     (e,) = parse_release("mine", "o/xfont", release)
     assert e.id == "xfont"
     assert e.weights == (400, 700)
@@ -27,13 +41,15 @@ def test_parse_release_loose_files():
 
 
 def test_parse_tree():
-    tree = {"tree": [
-        {"path": "fonts/otf/X-Regular.otf", "type": "blob"},
-        {"path": "fonts/ttf/X-Regular.ttf", "type": "blob"},
-        {"path": "fonts/ttf/X-Italic.ttf", "type": "blob"},
-        {"path": "fonts/ttf", "type": "tree"},
-        {"path": "README.md", "type": "blob"},
-    ]}
+    tree = {
+        "tree": [
+            {"path": "fonts/otf/X-Regular.otf", "type": "blob"},
+            {"path": "fonts/ttf/X-Regular.ttf", "type": "blob"},
+            {"path": "fonts/ttf/X-Italic.ttf", "type": "blob"},
+            {"path": "fonts/ttf", "type": "tree"},
+            {"path": "README.md", "type": "blob"},
+        ]
+    }
     (e,) = parse_tree("mine", "o/xfont", "main", tree)
     assert e.key == "mine:xfont"
     assert e.extra["paths"] == ["fonts/ttf/X-Regular.ttf", "fonts/ttf/X-Italic.ttf"]
@@ -64,10 +80,19 @@ def test_install_tree_files(monkeypatch, tmp_path):
         return dest
 
     monkeypatch.setattr(net, "download", download)
-    (e,) = parse_tree("mine", "o/xfont", "main", {"tree": [
-        {"path": "fonts/X Sans-Regular.ttf", "type": "blob"},
-        {"path": "fonts/X Sans-Bold.ttf", "type": "blob"},
-    ]})
-    files = GitHubRepoSource("mine", "o/xfont").install_files(e, tmp_path, Selection(weights=frozenset({700})))
+    (e,) = parse_tree(
+        "mine",
+        "o/xfont",
+        "main",
+        {
+            "tree": [
+                {"path": "fonts/X Sans-Regular.ttf", "type": "blob"},
+                {"path": "fonts/X Sans-Bold.ttf", "type": "blob"},
+            ]
+        },
+    )
+    files = GitHubRepoSource("mine", "o/xfont").install_files(
+        e, tmp_path, Selection(weights=frozenset({700}))
+    )
     assert [f.name for f in files] == ["X Sans-Bold.ttf"]
     assert got == ["https://raw.githubusercontent.com/o/xfont/main/fonts/X%20Sans-Bold.ttf"]

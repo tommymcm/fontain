@@ -40,8 +40,16 @@ def scan(source: str, root: Path) -> list[FontEntry]:
         if not picked:
             continue
         weights, styles = _variants(picked)
-        entries.append(FontEntry(source=source, id=font_id, family=font_id, weights=weights,
-                                 styles=styles, extra={"paths": picked}))
+        entries.append(
+            FontEntry(
+                source=source,
+                id=font_id,
+                family=font_id,
+                weights=weights,
+                styles=styles,
+                extra={"paths": picked},
+            )
+        )
     return entries
 
 
@@ -63,7 +71,9 @@ class LocalDirSource:
 
     def install_files(self, entry: FontEntry, dest: Path, sel: Selection) -> list[Path]:
         root = self._root()
-        files = [Path(shutil.copy2(root / p, dest / basename(p))) for p in pick_fonts(entry.extra["paths"], sel)]
+        files = [
+            Path(shutil.copy2(root / p, dest / basename(p))) for p in pick_fonts(entry.extra["paths"], sel)
+        ]
         if not files:
             raise SourceError(f"no font files of {entry.key} match the requested weights/styles")
         return files

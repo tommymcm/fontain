@@ -71,6 +71,7 @@ def decode_png(data: bytes) -> Image:
 
 def _to_256(r: int, g: int, b: int) -> int:
     """Nearest colour in the xterm 256-colour palette (cube or grey ramp)."""
+
     def level(v: int) -> int:
         return 0 if v < 48 else 1 if v < 115 else (v - 35) // 40
 

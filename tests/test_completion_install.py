@@ -134,8 +134,17 @@ def fake_install(tmp_path):
     userbin = tmp_path / "localbin"
     userbin.mkdir()
     (userbin / "fontain").symlink_to(exe)
-    store.save_manifest({"fontsource:inter": {"source": "fontsource", "id": "inter", "family": "Inter",
-                                              "files": [], "installed": ""}})
+    store.save_manifest(
+        {
+            "fontsource:inter": {
+                "source": "fontsource",
+                "id": "inter",
+                "family": "Inter",
+                "files": [],
+                "installed": "",
+            }
+        }
+    )
     return userbin
 
 
@@ -156,8 +165,9 @@ def _press_tab(userbin, tmp_path, answer, line="fontain remove "):
         'echo "reply: ${COMPREPLY[*]}"\n'
         "complete -p fontain\n"
     )
-    out = subprocess.run(["bash", "--norc", "--noprofile", "-c", driver],
-                         capture_output=True, text=True, env=env, check=True).stdout.splitlines()
+    out = subprocess.run(
+        ["bash", "--norc", "--noprofile", "-c", driver], capture_output=True, text=True, env=env, check=True
+    ).stdout.splitlines()
     return out, tty.read_text()
 
 
@@ -167,7 +177,9 @@ def test_first_tab_asks_then_completes(fake_install, tmp_path, answer):
     out, screen = _press_tab(fake_install, tmp_path, answer)
     assert out == ["complete -F _fontain_ask fontain", "reply: inter", "complete -F _fontain fontain"]
     assert "enable tab completion for fontain? [Y/n]" in screen
-    assert screen.endswith(f"{pwd.getpwuid(os.getuid()).pw_name}@host$ fontain remove ")  # prompt + line redrawn
+    assert screen.endswith(
+        f"{pwd.getpwuid(os.getuid()).pw_name}@host$ fontain remove "
+    )  # prompt + line redrawn
     assert completion.get_consent() == "yes"
 
     # next shell: no question, straight to completion
@@ -178,7 +190,11 @@ def test_first_tab_asks_then_completes(fake_install, tmp_path, answer):
 @pytest.mark.skipif(BASH_COMPLETION is None, reason="bash-completion not installed")
 def test_first_tab_decline_is_remembered(fake_install, tmp_path):
     out, screen = _press_tab(fake_install, tmp_path, "n")
-    assert out == ["complete -F _fontain_ask fontain", "reply: ", "complete -o bashdefault -o default -F _fontain_off fontain"]
+    assert out == [
+        "complete -F _fontain_ask fontain",
+        "reply: ",
+        "complete -o bashdefault -o default -F _fontain_off fontain",
+    ]
     assert "not asking again" in screen
     assert completion.get_consent() == "no"
 

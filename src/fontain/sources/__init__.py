@@ -13,9 +13,7 @@ from fontain.sources.google import GoogleSource
 from fontain.sources.local import LocalDirSource
 from fontain.sources.nerdfonts import NerdFontsSource
 
-SOURCES: dict[str, Source] = {
-    s.name: s for s in (FontsourceSource(), GoogleSource(), NerdFontsSource())
-}
+SOURCES: dict[str, Source] = {s.name: s for s in (FontsourceSource(), GoogleSource(), NerdFontsSource())}
 
 
 def make_source(name: str, cfg: dict[str, Any]) -> Source:

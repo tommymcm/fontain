@@ -144,18 +144,27 @@ def script(shell: str, commands: list[tuple[str, str]], remove_names: list[str])
     """
     names = " ".join(n for n, _ in commands)
     if shell == "bash":
-        return (BASH.replace("__COMMANDS__", names).replace("__HELPER__", helper_command())
-                .replace("__REMOVE_PIPE__", "|".join(remove_names)))
+        return (
+            BASH.replace("__COMMANDS__", names)
+            .replace("__HELPER__", helper_command())
+            .replace("__REMOVE_PIPE__", "|".join(remove_names))
+        )
     if shell == "zsh":
         described = " ".join(_quote_single(f"{n}:{h}") for n, h in commands)
-        return (ZSH.replace("__ZSH_COMMANDS__", described).replace("__HELPER__", helper_command())
-                .replace("__REMOVE_PIPE__", "|".join(remove_names)))
+        return (
+            ZSH.replace("__ZSH_COMMANDS__", described)
+            .replace("__HELPER__", helper_command())
+            .replace("__REMOVE_PIPE__", "|".join(remove_names))
+        )
     if shell == "fish":
         lines = "\n".join(
             f"complete -c fontain -n __fish_use_subcommand -a {n} -d {_quote_single(h)}" for n, h in commands
         )
-        return (FISH.replace("__FISH_COMMANDS__", lines).replace("__HELPER__", helper_command())
-                .replace("__REMOVE_SPACE__", " ".join(remove_names)))
+        return (
+            FISH.replace("__FISH_COMMANDS__", lines)
+            .replace("__HELPER__", helper_command())
+            .replace("__REMOVE_SPACE__", " ".join(remove_names))
+        )
     raise ValueError(f"unsupported shell {shell!r}")
 
 

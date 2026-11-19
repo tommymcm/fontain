@@ -8,8 +8,16 @@ class FakeSource:
     name = "fake"
 
     def fetch_index(self):
-        return [FontEntry(source="fake", id="mono", family="Fake Mono", category="monospace",
-                          weights=(400, 700), styles=("normal",))]
+        return [
+            FontEntry(
+                source="fake",
+                id="mono",
+                family="Fake Mono",
+                category="monospace",
+                weights=(400, 700),
+                styles=("normal",),
+            )
+        ]
 
     def install_files(self, entry, dest, sel):
         f = dest / "FakeMono-Regular.ttf"

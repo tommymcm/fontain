@@ -2,8 +2,15 @@ from fontain.sources.base import Selection
 from fontain.sources.fontsource import parse_index, select_files
 
 INDEX = [
-    {"id": "inter", "family": "Inter", "category": "sans-serif", "license": "OFL-1.1",
-     "weights": [400, 700], "styles": ["normal", "italic"], "type": "google"},
+    {
+        "id": "inter",
+        "family": "Inter",
+        "category": "sans-serif",
+        "license": "OFL-1.1",
+        "weights": [400, 700],
+        "styles": ["normal", "italic"],
+        "type": "google",
+    },
 ]
 
 FONT = {

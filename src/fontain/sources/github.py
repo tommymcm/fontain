@@ -59,15 +59,24 @@ def parse_release(source: str, repo: str, release: dict[str, Any]) -> list[FontE
         if font_id in ids:
             font_id = stem
         ids.add(font_id)
-        entries.append(FontEntry(source=source, id=font_id, family=font_id,
-                                 extra={"url": url, "version": version}))
+        entries.append(
+            FontEntry(source=source, id=font_id, family=font_id, extra={"url": url, "version": version})
+        )
     if loose:
         picked = pick_fonts([n for n, _ in loose])
         files = [[n, u] for n, u in loose if n in picked]
         weights, styles = _variants(picked)
         repo_id = repo.split("/")[1]
-        entries.append(FontEntry(source=source, id=repo_id, family=repo_id, weights=weights,
-                                 styles=styles, extra={"files": files, "version": version}))
+        entries.append(
+            FontEntry(
+                source=source,
+                id=repo_id,
+                family=repo_id,
+                weights=weights,
+                styles=styles,
+                extra={"files": files, "version": version},
+            )
+        )
     return entries
 
 
@@ -78,8 +87,16 @@ def parse_tree(source: str, repo: str, branch: str, tree: dict[str, Any]) -> lis
         return []
     weights, styles = _variants(picked)
     repo_id = repo.split("/")[1]
-    return [FontEntry(source=source, id=repo_id, family=repo_id, weights=weights, styles=styles,
-                      extra={"branch": branch, "paths": picked, "version": branch})]
+    return [
+        FontEntry(
+            source=source,
+            id=repo_id,
+            family=repo_id,
+            weights=weights,
+            styles=styles,
+            extra={"branch": branch, "paths": picked, "version": branch},
+        )
+    ]
 
 
 class GitHubRepoSource:

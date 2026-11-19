@@ -66,8 +66,10 @@ def cmd_search(args) -> int:
     installed = store.load_manifest()
     shown = hits[: args.limit] if args.limit > 0 else hits
     table(
-        [[("* " if e.key in installed else "  ") + e.key, e.family, e.category, e.variants_summary()]
-         for e in shown],
+        [
+            [("* " if e.key in installed else "  ") + e.key, e.family, e.category, e.variants_summary()]
+            for e in shown
+        ],
         ["  FONT", "FAMILY", "CATEGORY", "VARIANTS"],
     )
     if len(hits) > len(shown):
@@ -231,7 +233,9 @@ def cmd_repo_add(args) -> int:
     existing[args.name] = cfg
     repos.save(existing)
     found = "" if args.no_check else f" with {len(entries)} font(s)"
-    print(f"Added {cfg['type']} repository {args.name!r}{found}. Install with `fontain install {args.name}:<font>`.")
+    print(
+        f"Added {cfg['type']} repository {args.name!r}{found}. Install with `fontain install {args.name}:<font>`."
+    )
     return 0
 
 
@@ -280,8 +284,10 @@ def cmd_completion(args) -> int:
             print(f"Installed {shell} completion: {path}")
             print("It takes effect in new shells.")
             if shell == "bash" and not completion.bash_completion_available():
-                print("note: this needs the bash-completion package "
-                      "(e.g. `dnf install bash-completion` / `apt install bash-completion`)")
+                print(
+                    "note: this needs the bash-completion package "
+                    "(e.g. `dnf install bash-completion` / `apt install bash-completion`)"
+                )
         else:
             path = completion.uninstall(shell)
             completion.set_consent("no")
@@ -364,7 +370,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_repo_list)
 
     s = rsub.add_parser(
-        "add", help="add a repository",
+        "add",
+        help="add a repository",
         description="Add a GitHub repository (github:OWNER/REPO or a github.com URL) "
         "or a local directory as a font source.",
     )
@@ -378,7 +385,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_repo_remove)
 
     s = rsub.add_parser(
-        "prefer", help="set the source bare font names resolve from first",
+        "prefer",
+        help="set the source bare font names resolve from first",
         description="Choose which source `fontain install NAME` tries first. "
         "With no NAME, print the current preference.",
     )
@@ -387,7 +395,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_repo_prefer)
 
     s = sub.add_parser(
-        "completion", help="set up shell tab completion",
+        "completion",
+        help="set up shell tab completion",
         description="In bash, fontain asks the first time you press Tab after `fontain`. "
         "Use --install/--uninstall to change your answer (or set it up for fish), "
         "--reset to be asked again, or print the script for SHELL "
@@ -395,8 +404,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     s.add_argument("shell", nargs="?", choices=completion.SHELLS, help="default for --install: from $SHELL")
     mode = s.add_mutually_exclusive_group()
-    mode.add_argument("--install", action="store_true",
-                      help="install into the shell's completion directory (bash, fish)")
+    mode.add_argument(
+        "--install", action="store_true", help="install into the shell's completion directory (bash, fish)"
+    )
     mode.add_argument("--uninstall", action="store_true", help="disable completion and don't ask again")
     mode.add_argument("--reset", action="store_true", help="forget your answer; ask again on the next Tab")
     s.set_defaults(func=cmd_completion, parser=p)
@@ -405,15 +415,20 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_shell)
 
     s = sub.add_parser(
-        "run", help="run commands from a script file or stdin",
+        "run",
+        help="run commands from a script file or stdin",
         description="Run one fontain command per line, as typed in the shell: shell-style quoting, "
         "blank lines and # comments are ignored. Stops at the first failing command. The font "
         "cache is rebuilt once at the end. Make a script executable with the first line "
         "`#!/usr/bin/env -S fontain run`. Piping into `fontain` with no arguments also runs a script.",
     )
     s.add_argument("script", nargs="?", default="-", help="script file (default or `-`: stdin)")
-    s.add_argument("-k", "--keep-going", action="store_true",
-                   help="run every line even if one fails (still exits non-zero)")
+    s.add_argument(
+        "-k",
+        "--keep-going",
+        action="store_true",
+        help="run every line even if one fails (still exits non-zero)",
+    )
     s.set_defaults(func=cmd_run)
 
     # Hidden helper used by the completion scripts (no help= keeps it out of --help).

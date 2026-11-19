@@ -9,17 +9,27 @@ from fontain import cli, completion, store
 
 
 def _install(*keys):
-    store.save_manifest({
-        k: {"source": k.split(":")[0], "id": k.split(":", 1)[1], "family": k, "files": [], "installed": ""}
-        for k in keys
-    })
+    store.save_manifest(
+        {
+            k: {
+                "source": k.split(":")[0],
+                "id": k.split(":", 1)[1],
+                "family": k,
+                "files": [],
+                "installed": "",
+            }
+            for k in keys
+        }
+    )
 
 
 def test_one_removable_name_per_font():
     _install("fontsource:atkinson-hyperlegible", "nerd:JetBrainsMono", "work:Acme Sans")
     assert completion.installed_candidates() == ["Acme Sans", "atkinson-hyperlegible", "JetBrainsMono"]
     assert completion.installed_candidates(qualified=True) == [
-        "fontsource:atkinson-hyperlegible", "nerd:JetBrainsMono", "work:Acme Sans",
+        "fontsource:atkinson-hyperlegible",
+        "nerd:JetBrainsMono",
+        "work:Acme Sans",
     ]
 
 
@@ -75,7 +85,10 @@ def _bash_runner(script, env):
         )
         result = subprocess.run(
             [BASH, "--norc", "-c", driver, "bash", line],
-            capture_output=True, text=True, env=env, check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+            check=True,
         )
         return [l for l in result.stdout.splitlines() if l]
 
@@ -102,17 +115,20 @@ def bash_complete(tmp_path, capsys, monkeypatch):
 
 
 @pytest.mark.skipif(BASH is None, reason="bash not installed")
-@pytest.mark.parametrize("line,expected", [
-    ("fontain re", ["remove", "refresh", "repo"]),
-    ("fontain remove ", ["inter", "Acme\\ Sans"]),
-    ("fontain rm in", ["inter"]),
-    ("fontain uninstall inter ", ["inter", "Acme\\ Sans"]),
-    ("fontain remove fontsource:", ["inter"]),  # text before ':' is not replaced by bash
-    ("fontain remove work:Ac", ["Acme\\ Sans"]),
-    ("fontain remove Acme\\ S", ["Acme\\ Sans"]),
-    ("fontain remove --no", ["--no-cache"]),
-    ("fontain install in", []),
-])
+@pytest.mark.parametrize(
+    "line,expected",
+    [
+        ("fontain re", ["remove", "refresh", "repo"]),
+        ("fontain remove ", ["inter", "Acme\\ Sans"]),
+        ("fontain rm in", ["inter"]),
+        ("fontain uninstall inter ", ["inter", "Acme\\ Sans"]),
+        ("fontain remove fontsource:", ["inter"]),  # text before ':' is not replaced by bash
+        ("fontain remove work:Ac", ["Acme\\ Sans"]),
+        ("fontain remove Acme\\ S", ["Acme\\ Sans"]),
+        ("fontain remove --no", ["--no-cache"]),
+        ("fontain install in", []),
+    ],
+)
 def test_bash_completion(bash_complete, line, expected):
     assert bash_complete(line) == expected
 

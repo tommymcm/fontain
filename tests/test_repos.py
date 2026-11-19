@@ -5,12 +5,15 @@ import pytest
 from fontain import cli, fontcache, paths, repos, store
 
 
-@pytest.mark.parametrize("spec,repo", [
-    ("github:rsms/inter", "rsms/inter"),
-    ("https://github.com/rsms/inter", "rsms/inter"),
-    ("https://github.com/rsms/inter.git", "rsms/inter"),
-    ("github.com/be5invis/Iosevka/releases", "be5invis/Iosevka"),
-])
+@pytest.mark.parametrize(
+    "spec,repo",
+    [
+        ("github:rsms/inter", "rsms/inter"),
+        ("https://github.com/rsms/inter", "rsms/inter"),
+        ("https://github.com/rsms/inter.git", "rsms/inter"),
+        ("github.com/be5invis/Iosevka/releases", "be5invis/Iosevka"),
+    ],
+)
 def test_parse_github(spec, repo):
     assert repos.parse_spec(spec) == {"type": "github", "target": repo}
 

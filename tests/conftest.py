@@ -13,7 +13,9 @@ def isolated_dirs(monkeypatch, tmp_path):
     # never write the Tab loader into the real venv
     from fontain import completion
 
-    monkeypatch.setattr(completion, "tab_loader_path", lambda: tmp_path / "prefix" / completion.TAB_LOADER_RELPATH)
+    monkeypatch.setattr(
+        completion, "tab_loader_path", lambda: tmp_path / "prefix" / completion.TAB_LOADER_RELPATH
+    )
     return tmp_path
 
 

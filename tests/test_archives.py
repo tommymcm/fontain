@@ -10,8 +10,15 @@ from fontain.sources.base import Selection
 
 
 def test_pick_prefers_ttf_and_dedupes():
-    paths = ["otf/A-Regular.otf", "ttf/A-Regular.ttf", "variable/A-Regular.ttf", "A.ttc",
-             "__MACOSX/._A-Bold.ttf", ".hidden/A-Bold.ttf", "README.md"]
+    paths = [
+        "otf/A-Regular.otf",
+        "ttf/A-Regular.ttf",
+        "variable/A-Regular.ttf",
+        "A.ttc",
+        "__MACOSX/._A-Bold.ttf",
+        ".hidden/A-Bold.ttf",
+        "README.md",
+    ]
     assert pick_fonts(paths) == ["ttf/A-Regular.ttf"]
     assert pick_fonts(["x/A-Regular.otf", "A.ttc"]) == ["x/A-Regular.otf"]
     assert pick_fonts(["A.ttc"]) == ["A.ttc"]
@@ -48,13 +55,16 @@ def _zip(path, members):
 @pytest.mark.parametrize("make,suffix", [(_tar, ".tar.xz"), (_zip, ".zip")])
 def test_extract_only_fonts_and_flatten(tmp_path, make, suffix):
     arc = tmp_path / f"f{suffix}"
-    make(arc, {
-        "Mono-Regular.ttf": b"r",
-        "sub/Mono-Bold.ttf": b"b",
-        "otf/Mono-Bold.otf": b"o",
-        "../../escape-Regular.ttf": b"x",
-        "README.md": b"readme",
-    })
+    make(
+        arc,
+        {
+            "Mono-Regular.ttf": b"r",
+            "sub/Mono-Bold.ttf": b"b",
+            "otf/Mono-Bold.otf": b"o",
+            "../../escape-Regular.ttf": b"x",
+            "README.md": b"readme",
+        },
+    )
     dest = tmp_path / "out"
     dest.mkdir()
     written = extract_fonts(arc, dest)
@@ -69,4 +79,6 @@ def test_extract_filtered(tmp_path):
     _zip(arc, {"Mono-Regular.ttf": b"r", "Mono-Bold.ttf": b"b"})
     dest = tmp_path / "out"
     dest.mkdir()
-    assert [p.name for p in extract_fonts(arc, dest, Selection(weights=frozenset({700})))] == ["Mono-Bold.ttf"]
+    assert [p.name for p in extract_fonts(arc, dest, Selection(weights=frozenset({700})))] == [
+        "Mono-Bold.ttf"
+    ]

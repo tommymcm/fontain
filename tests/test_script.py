@@ -70,7 +70,9 @@ def test_stops_at_first_failure(monkeypatch, fake, capsys):
 
 
 def test_keep_going(monkeypatch, fake, capsys):
-    monkeypatch.setattr("sys.stdin", io.StringIO("frob\ninstall fake:mono\nlist --bogus\ninstall fake:sans\n"))
+    monkeypatch.setattr(
+        "sys.stdin", io.StringIO("frob\ninstall fake:mono\nlist --bogus\ninstall fake:sans\n")
+    )
     assert cli.main(["run", "--keep-going"]) == 2
     err = capsys.readouterr().err
     assert "<stdin>:1:" in err and "<stdin>:3:" in err
@@ -96,8 +98,13 @@ def test_shell_can_run_a_script(tmp_path, fake, monkeypatch):
     lines = iter([f"run {script}", "exit"])
     monkeypatch.setattr(repl, "_setup_readline", lambda completer: None)
     real = repl.repl
-    monkeypatch.setattr(repl, "repl", lambda run, help_text, completer, logo=None:
-                        real(run, help_text, completer, read=lambda p: next(lines)))
+    monkeypatch.setattr(
+        repl,
+        "repl",
+        lambda run, help_text, completer, logo=None: real(
+            run, help_text, completer, read=lambda p: next(lines)
+        ),
+    )
     assert cli.main(["shell"]) == 0
     assert store.is_installed("fake:mono")
 

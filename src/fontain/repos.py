@@ -10,7 +10,9 @@ from fontain import paths
 
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
 GITHUB_REPO_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9._-]+$")
-GITHUB_URL_RE = re.compile(r"^(?:https?://)?(?:www\.)?github\.com/([^/\s]+/[^/\s]+?)(?:\.git)?/?(?:[/#?].*)?$")
+GITHUB_URL_RE = re.compile(
+    r"^(?:https?://)?(?:www\.)?github\.com/([^/\s]+/[^/\s]+?)(?:\.git)?/?(?:[/#?].*)?$"
+)
 
 
 class RepoError(Exception):
@@ -64,7 +66,7 @@ def set_preferred(name: str | None) -> None:
 def parse_spec(spec: str) -> dict[str, str]:
     """Parse ``github:owner/repo``, a github.com URL, or a local directory."""
     if spec.startswith("github:"):
-        repo = spec[len("github:"):].strip("/")
+        repo = spec[len("github:") :].strip("/")
     elif m := GITHUB_URL_RE.match(spec):
         repo = m.group(1)
     else:

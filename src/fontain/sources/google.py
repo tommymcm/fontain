@@ -13,15 +13,21 @@ LICENSE_DIRS = ("ofl", "apache", "ufl")
 LICENSE_NAMES = {"ofl": "OFL-1.1", "apache": "Apache-2.0", "ufl": "UFL-1.0"}
 
 WEIGHT_NAMES = {
-    "thin": 100, "hairline": 100,
-    "extralight": 200, "ultralight": 200,
+    "thin": 100,
+    "hairline": 100,
+    "extralight": 200,
+    "ultralight": 200,
     "light": 300,
-    "regular": 400, "": 400,
+    "regular": 400,
+    "": 400,
     "medium": 500,
-    "semibold": 600, "demibold": 600,
+    "semibold": 600,
+    "demibold": 600,
     "bold": 700,
-    "extrabold": 800, "ultrabold": 800,
-    "black": 900, "heavy": 900,
+    "extrabold": 800,
+    "ultrabold": 800,
+    "black": 900,
+    "heavy": 900,
 }
 
 
@@ -83,7 +89,9 @@ def _weight(suffix: str) -> int | None:
 def select_files(listing: list[dict[str, Any]], sel: Selection) -> list[tuple[str, str]]:
     fonts = [f for f in listing if f.get("type") == "file" and f["name"].endswith(".ttf")]
     picked = [f for f in fonts if sel.wants(*parse_filename(f["name"]))]
-    licenses = [f for f in listing if f.get("type") == "file" and f["name"] in ("OFL.txt", "LICENSE.txt", "UFL.txt")]
+    licenses = [
+        f for f in listing if f.get("type") == "file" and f["name"] in ("OFL.txt", "LICENSE.txt", "UFL.txt")
+    ]
     return [(f["name"], f["download_url"]) for f in picked + (licenses if picked else [])]
 
 

@@ -12,8 +12,11 @@ def E(source, id, family=None):
 
 
 INDEXES = {
-    "fontsource": [E("fontsource", "roboto", "Roboto"), E("fontsource", "roboto-mono", "Roboto Mono"),
-                   E("fontsource", "inter", "Inter")],
+    "fontsource": [
+        E("fontsource", "roboto", "Roboto"),
+        E("fontsource", "roboto-mono", "Roboto Mono"),
+        E("fontsource", "inter", "Inter"),
+    ],
     "google": [E("google", "roboto", "Roboto"), E("google", "notoserifroboto", "Noto Serif Roboto")],
     "nerd": [E("nerd", "JetBrainsMono", "JetBrainsMono Nerd Font")],
 }

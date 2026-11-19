@@ -24,7 +24,10 @@ def repo(tmp_path):
 def test_scan(repo):
     entries = {e.id: e for e in scan("mine", repo)}
     assert sorted(entries) == ["Acme Sans", "Loose"]
-    assert entries["Acme Sans"].extra["paths"] == ["Acme Sans/ttf/AcmeSans-Bold.ttf", "Acme Sans/ttf/AcmeSans-Regular.ttf"]
+    assert entries["Acme Sans"].extra["paths"] == [
+        "Acme Sans/ttf/AcmeSans-Bold.ttf",
+        "Acme Sans/ttf/AcmeSans-Regular.ttf",
+    ]
     assert entries["Acme Sans"].weights == (400, 700)
     assert entries["Loose"].styles == ("normal", "italic")
 
