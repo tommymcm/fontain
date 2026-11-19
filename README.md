@@ -66,3 +66,5 @@ Enable tab completion with `fontain completion --install`. For zsh, add `eval "$
 uv sync
 uv run pytest
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for linting, type checking and how the code is laid out.
