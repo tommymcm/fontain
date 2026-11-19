@@ -29,7 +29,7 @@ fontain install google:lato -w 400,700  # pick a source repo, and weights
 fontain list                            # list installed fonts
 fontain remove inter                    # uninstall a font
 fontain --help                          # list all commands
-fontain <command> --help                  # list flags for command
+fontain <command> --help                # list flags for command
 ```
 
 ### Add your own repositories
