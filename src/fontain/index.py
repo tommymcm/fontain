@@ -1,12 +1,11 @@
 """Per-source font indexes, cached on disk, plus search and name resolution."""
 
 import json
-import os
 import sys
 import time
 from dataclasses import dataclass
 
-from fontain import net, paths, sources
+from fontain import jsonfile, net, paths, sources
 from fontain.sources import FontEntry, SourceError
 
 TTL_SECONDS = 24 * 3600
@@ -17,11 +16,7 @@ def _cache_path(source: str):
 
 
 def write_cache(source: str, entries: list[FontEntry]) -> None:
-    path = _cache_path(source)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps([e.to_dict() for e in entries]))
-    os.replace(tmp, path)
+    jsonfile.write(_cache_path(source), [e.to_dict() for e in entries], indent=None)
 
 
 def drop_cache(source: str) -> None:

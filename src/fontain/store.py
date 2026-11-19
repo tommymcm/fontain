@@ -1,14 +1,12 @@
 """Installed-font bookkeeping: where files live and what fontain owns."""
 
-import json
-import os
 import shutil
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from fontain import paths
+from fontain import jsonfile, paths
 from fontain.sources.base import FontEntry, Selection, Source
 
 
@@ -18,19 +16,14 @@ class StoreError(Exception):
 
 def load_manifest() -> dict[str, dict[str, Any]]:
     try:
-        return json.loads(paths.state_file().read_text())
-    except FileNotFoundError:
-        return {}
-    except json.JSONDecodeError as e:
+        manifest: dict[str, dict[str, Any]] = jsonfile.read(paths.state_file(), {})
+    except ValueError as e:
         raise StoreError(f"corrupt manifest {paths.state_file()}: {e}") from e
+    return manifest
 
 
 def save_manifest(manifest: dict[str, dict[str, Any]]) -> None:
-    path = paths.state_file()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-    os.replace(tmp, path)
+    jsonfile.write(paths.state_file(), manifest, sort_keys=True)
 
 
 def font_dir(source: str, font_id: str) -> Path:

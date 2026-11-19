@@ -1,12 +1,11 @@
 """User-added repositories, stored in $XDG_CONFIG_HOME/fontain/repos.json."""
 
-import json
 import os
 import re
 from pathlib import Path
 from typing import Any
 
-from fontain import paths
+from fontain import jsonfile, paths
 
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
 GITHUB_REPO_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9._-]+$")
@@ -21,21 +20,14 @@ class RepoError(Exception):
 
 def _read_json(path: Path) -> dict[str, Any]:
     try:
-        data = json.loads(path.read_text())
-    except FileNotFoundError:
-        return {}
-    except json.JSONDecodeError as e:
+        data = jsonfile.read(path, {})
+    except ValueError as e:
         raise RepoError(f"invalid config {path}: {e}") from e
     if not isinstance(data, dict):
         raise RepoError(f"invalid config {path}: expected an object")
     return data
 
 
-def _write_json(path: Path, data: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=2) + "\n")
-    os.replace(tmp, path)
 
 
 def load() -> dict[str, dict[str, Any]]:
@@ -43,7 +35,7 @@ def load() -> dict[str, dict[str, Any]]:
 
 
 def save(repos: dict[str, dict[str, Any]]) -> None:
-    _write_json(paths.config_file(), repos)
+    jsonfile.write(paths.config_file(), repos)
 
 
 def preferred() -> str | None:
@@ -60,7 +52,7 @@ def set_preferred(name: str | None) -> None:
         settings["prefer"] = name
     else:
         settings.pop("prefer", None)
-    _write_json(paths.settings_file(), settings)
+    jsonfile.write(paths.settings_file(), settings)
 
 
 def parse_spec(spec: str) -> dict[str, str]:
