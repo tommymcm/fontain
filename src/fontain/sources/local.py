@@ -5,6 +5,7 @@ files sitting directly in the top-level directory are grouped by the part of
 their name before the first ``-`` (``Acme-Bold.otf`` -> ``Acme``).
 """
 
+import hashlib
 import os
 import shutil
 from collections import defaultdict
@@ -23,6 +24,15 @@ def _font_files(root: Path, base: Path) -> list[str]:
             if f.lower().endswith(FORMAT_PREFERENCE) and not f.startswith("."):
                 out.append(str((Path(dirpath) / f).relative_to(base)))
     return out
+
+
+def fingerprint(root: Path, paths: list[str]) -> str:
+    """Changes when any of the font files is added, removed, resized or modified."""
+    h = hashlib.sha256()
+    for p in sorted(paths):
+        st = (root / p).stat()
+        h.update(f"{p}\0{st.st_size}\0{st.st_mtime_ns}\n".encode())
+    return h.hexdigest()[:12]
 
 
 def scan(source: str, root: Path) -> list[FontEntry]:
@@ -47,6 +57,7 @@ def scan(source: str, root: Path) -> list[FontEntry]:
                 family=font_id,
                 weights=weights,
                 styles=styles,
+                version=fingerprint(root, picked),
                 extra={"paths": picked},
             )
         )

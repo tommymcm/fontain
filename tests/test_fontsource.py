@@ -10,6 +10,7 @@ INDEX = [
         "weights": [400, 700],
         "styles": ["normal", "italic"],
         "type": "google",
+        "lastModified": "2025-06-02",
     },
 ]
 
@@ -31,6 +32,7 @@ FONT = {
 
 def test_parse_index():
     (e,) = parse_index(INDEX)
+    assert e.version == "2025-06-02"
     assert e.key == "fontsource:inter"
     assert e.weights == (400, 700)
     assert e.variants_summary() == "400,700 normal/italic"

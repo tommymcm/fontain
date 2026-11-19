@@ -45,3 +45,17 @@ def test_install_copies(repo, tmp_path):
 def test_missing_dir(tmp_path):
     with pytest.raises(SourceError):
         LocalDirSource("mine", str(tmp_path / "gone")).fetch_index()
+
+
+def test_version_changes_when_files_change(repo):
+    def version():
+        return next(e.version for e in scan("mine", repo) if e.id == "Acme Sans")
+
+    before = version()
+    assert before and version() == before  # stable while nothing changes
+    bold = repo / "Acme Sans" / "ttf" / "AcmeSans-Bold.ttf"
+    bold.write_bytes(b"bold v2")  # new content (and size)
+    assert version() != before
+    changed = version()
+    (repo / "Acme Sans" / "ttf" / "AcmeSans-Black.ttf").write_bytes(b"k")  # a file added
+    assert version() != changed

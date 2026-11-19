@@ -13,6 +13,7 @@ def test_parse_index():
     (e,) = parse_index(release)
     assert e.key == "nerd:JetBrainsMono"
     assert e.extra["checksums"] == "https://dl/SHA-256.txt"
+    assert e.version == "v3.5.1"
 
 
 def test_parse_checksums():

@@ -18,6 +18,9 @@ class FontEntry:
     license: str = ""
     weights: tuple[int, ...] = ()
     styles: tuple[str, ...] = ()
+    # Changes whenever the source publishes different files for this font (a
+    # release tag, a modification date, a content fingerprint). "" = unknown.
+    version: str = ""
     extra: dict[str, Any] = field(default_factory=dict, compare=False, hash=False)
 
     @property

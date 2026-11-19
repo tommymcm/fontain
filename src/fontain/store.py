@@ -86,6 +86,7 @@ def install(entry: FontEntry, source: Source, sel: Selection, force: bool = Fals
         "files": sorted(f.name for f in files),
         "weights": sorted(sel.weights),
         "styles": sorted(sel.styles),
+        "version": entry.version,
         "installed": datetime.now(UTC).isoformat(timespec="seconds"),
     }
     manifest[entry.key] = record

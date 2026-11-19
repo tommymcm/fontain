@@ -28,7 +28,8 @@ def parse_index(release: dict[str, Any]) -> list[FontEntry]:
                 family=f"{font_id} Nerd Font",
                 category="monospace",
                 license="see archive",
-                extra={"url": url, "checksums": checksums, "version": release.get("tag_name", "")},
+                version=release.get("tag_name", ""),
+                extra={"url": url, "checksums": checksums},
             )
         )
     return out

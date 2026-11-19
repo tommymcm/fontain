@@ -26,7 +26,8 @@ def test_parse_release_archives():
     entries = parse_release("mine", "o/r", release)
     assert [e.id for e in entries] == ["Inter", "Fira_Code", "monaspace-static", "3270"]
     assert entries[0].key == "mine:Inter"
-    assert entries[0].extra == {"url": "https://dl/Inter-4.1.zip", "version": "v4.1"}
+    assert entries[0].extra == {"url": "https://dl/Inter-4.1.zip"}
+    assert {e.version for e in entries} == {"v4.1"}
 
 
 def test_parse_release_loose_files():
@@ -42,18 +43,20 @@ def test_parse_release_loose_files():
 
 def test_parse_tree():
     tree = {
+        "sha": "0123456789abcdef0123",
         "tree": [
             {"path": "fonts/otf/X-Regular.otf", "type": "blob"},
             {"path": "fonts/ttf/X-Regular.ttf", "type": "blob"},
             {"path": "fonts/ttf/X-Italic.ttf", "type": "blob"},
             {"path": "fonts/ttf", "type": "tree"},
             {"path": "README.md", "type": "blob"},
-        ]
+        ],
     }
     (e,) = parse_tree("mine", "o/xfont", "main", tree)
     assert e.key == "mine:xfont"
     assert e.extra["paths"] == ["fonts/ttf/X-Regular.ttf", "fonts/ttf/X-Italic.ttf"]
     assert e.styles == ("normal", "italic")
+    assert e.version == "0123456789ab"  # the tree hash: changes with any commit to the files
     assert parse_tree("mine", "o/r", "main", {"tree": [{"path": "a.md", "type": "blob"}]}) == []
 
 

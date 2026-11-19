@@ -19,6 +19,7 @@ def parse_index(data: list[dict[str, Any]]) -> list[FontEntry]:
             license=f.get("license", ""),
             weights=tuple(f.get("weights", ())),
             styles=tuple(f.get("styles", ())),
+            version=f.get("lastModified", ""),
         )
         for f in data
     ]

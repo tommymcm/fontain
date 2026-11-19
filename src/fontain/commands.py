@@ -66,7 +66,7 @@ def cmd_info(args: argparse.Namespace) -> int:
         ("License", entry.license),
         ("Weights", ", ".join(map(str, entry.weights))),
         ("Styles", ", ".join(entry.styles)),
-        ("Version", entry.extra.get("version", "")),
+        ("Version", entry.version),
         ("Installed", record["dir"] if record else "no"),
     ]
     for label, value in fields:

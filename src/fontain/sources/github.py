@@ -53,7 +53,7 @@ def parse_release(source: str, repo: str, release: dict[str, Any]) -> list[FontE
             font_id = stem
         ids.add(font_id)
         entries.append(
-            FontEntry(source=source, id=font_id, family=font_id, extra={"url": url, "version": version})
+            FontEntry(source=source, id=font_id, family=font_id, version=version, extra={"url": url})
         )
     if loose:
         picked = pick_fonts([n for n, _ in loose])
@@ -67,7 +67,8 @@ def parse_release(source: str, repo: str, release: dict[str, Any]) -> list[FontE
                 family=repo_id,
                 weights=weights,
                 styles=styles,
-                extra={"files": files, "version": version},
+                version=version,
+                extra={"files": files},
             )
         )
     return entries
@@ -87,7 +88,9 @@ def parse_tree(source: str, repo: str, branch: str, tree: dict[str, Any]) -> lis
             family=repo_id,
             weights=weights,
             styles=styles,
-            extra={"branch": branch, "paths": picked, "version": branch},
+            # the tree hash changes with any commit that touches the repository's files
+            version=tree.get("sha", "")[:12],
+            extra={"branch": branch, "paths": picked},
         )
     ]
 

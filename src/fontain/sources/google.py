@@ -35,6 +35,7 @@ def parse_index(data: dict[str, Any]) -> list[FontEntry]:
                 category=f.get("category", "").lower().replace(" ", "-"),
                 weights=tuple(sorted({w for w, _ in variants})),
                 styles=tuple(s for s in ("normal", "italic") if any(v[1] == s for v in variants)),
+                version=f.get("lastModified", ""),
                 extra={"variable": bool(f.get("axes"))},
             )
         )

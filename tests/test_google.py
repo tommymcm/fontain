@@ -15,6 +15,7 @@ def test_parse_index():
                 "category": "Sans Serif",
                 "fonts": {"400": {}, "400i": {}, "700": {}},
                 "axes": [],
+                "lastModified": "2025-09-08",
             },
         ]
     }
@@ -23,6 +24,7 @@ def test_parse_index():
     assert e.category == "sans-serif"
     assert e.weights == (400, 700)
     assert e.styles == ("normal", "italic")
+    assert e.version == "2025-09-08"
 
 
 def _f(name):
