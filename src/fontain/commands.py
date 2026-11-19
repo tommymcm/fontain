@@ -3,11 +3,15 @@
 import argparse
 import contextlib
 import sys
+import tempfile
+import webbrowser
 from collections.abc import Sequence
+from pathlib import Path
 
-from fontain import completion, fontcache, index, net, paths, repos, sources, store
+from fontain import completion, fontcache, index, net, paths, preview, repos, sources, store
 from fontain.output import err, table
 from fontain.sources import FETCH_ERRORS, SOURCES, FontEntry, Selection, SourceError
+from fontain.sources.filenames import parse_filename
 
 
 def _sources_for(specs: Sequence[str]) -> list[str]:
@@ -235,7 +239,7 @@ def cmd_completion(args: argparse.Namespace) -> int:
     parser = args.parser  # the top-level FontainParser, which records its subcommands
     commands = [(c.name, c.help) for c in parser.commands if not c.hidden]
     # commands whose arguments are installed fonts complete from the manifest
-    font_commands = [name for cmd in ("remove", "update") for name in parser.find(cmd).names]
+    font_commands = [name for cmd in ("remove", "update", "preview") for name in parser.find(cmd).names]
     if args.reset:
         completion.set_consent(None)
         for name in completion.AUTOLOAD_SHELLS:
@@ -358,3 +362,43 @@ def cmd_update(args: argparse.Namespace) -> int:
     verb = "would be updated" if args.dry_run else "updated"
     print(f"{updated} {verb}, {current} already up to date.")
     return 1 if failures else 0
+
+
+def cmd_preview(args: argparse.Namespace) -> int:
+    """Write an HTML preview of a font and open it in the default browser."""
+    manifest = store.load_manifest()
+    sel = Selection(weights=args.weights or frozenset(), styles=args.styles or frozenset())
+    try:  # an installed font: use the files already on disk
+        key = store.find_installed(args.font, manifest)
+    except store.StoreError:
+        key = None
+    with tempfile.TemporaryDirectory(prefix="fontain-preview-") as tmp:
+        if key is not None:
+            rec = manifest[key]
+            folder = store.font_dir(rec["source"], rec["id"])
+            files = [folder / name for name in rec["files"] if sel.wants(*parse_filename(name))]
+            title, source = rec["family"], rec["source"]
+            subtitle = f"{key} · installed"
+        else:  # not installed: download to a temporary folder just for the preview
+            indexes = index.load_many(_sources_for([args.font]))
+            try:
+                entry = index.resolve(args.font, indexes).entry
+                print(f"Downloading {entry.key} for the preview...", flush=True)
+                files = sources.registry()[entry.source].install_files(entry, Path(tmp), sel)
+            except (index.ResolveError, SourceError, net.NetError, OSError) as e:
+                err(str(e))
+                return 1
+            key, title, source = entry.key, entry.family, entry.source
+            subtitle = f"{key} · not installed (`fontain install {key}`)"
+        try:
+            page = preview.build_html(title, subtitle, files, icons=source == "nerd")
+        except ValueError as e:
+            err(f"can't preview {key}: {e}")
+            return 1
+    path = preview.page_path(key)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(page, encoding="utf-8")
+    print(f"Preview: {path}")
+    if not args.no_open and not webbrowser.open(path.as_uri()):
+        print("note: couldn't open a browser; open the file above yourself")
+    return 0

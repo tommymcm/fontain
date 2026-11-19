@@ -30,6 +30,15 @@ def history_file():
 # --- completion ----------------------------------------------------------------
 
 
+def _cached_fonts() -> list[str]:
+    """Font names from the saved font lists (never fetches, so Tab stays instant)."""
+    out = []
+    for name in sources.registry():
+        ids = index.cached_ids(name)
+        out += ids + [f"{name}:{i}" for i in ids]
+    return out
+
+
 class Completer:
     def __init__(self, commands: list[str], subcommands: dict[str, list[str]]):
         self.commands = commands
@@ -57,17 +66,15 @@ class Completer:
             return self.commands
         if cmd in self.subcommands and len(before) == 1:
             return self.subcommands[cmd]
+        installed = completion.installed_candidates() + completion.installed_candidates(qualified=True)
         if cmd in ("remove", "uninstall", "rm", "update", "upgrade"):
-            return completion.installed_candidates() + completion.installed_candidates(qualified=True)
+            return installed
         if cmd == "repo" and len(before) == 2 and before[1] in ("remove", "rm", "prefer"):
-            names = list(repos.load()) if before[1] != "prefer" else list(sources.registry())
-            return names
+            return list(repos.load()) if before[1] != "prefer" else list(sources.registry())
         if cmd in ("install", "add", "info"):
-            out = []
-            for name in sources.registry():
-                ids = index.cached_ids(name)
-                out += ids + [f"{name}:{i}" for i in ids]
-            return out
+            return _cached_fonts()
+        if cmd == "preview":  # installed fonts, or anything a source offers
+            return installed + _cached_fonts()
         return []
 
     def complete(self, text: str, state: int) -> str | None:

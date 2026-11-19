@@ -139,4 +139,4 @@ def test_update_completes_installed_fonts(env, capsys):
     commands, subcommands, _ = cli.shell_context()
     assert "sans" in repl.Completer(commands, subcommands).candidates("update s")
     cli.main(["completion", "bash"])
-    assert "remove|uninstall|rm|update|upgrade)" in capsys.readouterr().out
+    assert "|update|upgrade|" in capsys.readouterr().out

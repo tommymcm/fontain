@@ -24,6 +24,7 @@ Run `fontain` with no arguments for an interactive REPL.
 ```sh
 fontain search roboto                   # search for fonts
 fontain info inter                      # details about a font
+fontain preview inter                   # preview a font in your browser
 fontain install inter                   # install font by name
 fontain install google:lato -w 400,700  # pick a source repo, and weights
 fontain list                            # list installed fonts

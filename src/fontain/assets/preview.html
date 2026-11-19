@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title · fontain preview</title>
+<style>
+$font_faces
+:root { --bg: #fbfbfa; --fg: #1d1d1f; --muted: #6e6e73; --card: #ffffff; --line: #e5e5e5; --accent: #3a8fb7; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161618; --fg: #f2f2f2; --muted: #9a9aa0; --card: #1f1f22; --line: #2e2e33; --accent: #73b3d3; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { position: sticky; top: 0; z-index: 1; background: var(--bg); border-bottom: 1px solid var(--line);
+  padding: 16px 24px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; }
+header h1 { margin: 0; font-size: 20px; }
+header .sub { color: var(--muted); }
+header .controls { margin-left: auto; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+input[type=text] { width: min(420px, 80vw); padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--card); color: var(--fg); font: inherit; }
+label { color: var(--muted); display: flex; align-items: center; gap: 8px; }
+input[type=range] { accent-color: var(--accent); }
+main { padding: 24px; display: grid; gap: 16px; max-width: 1200px; margin: 0 auto; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px 22px; }
+.card h2 { font: 600 13px/1.4 system-ui, sans-serif; margin: 0 0 8px; display: flex; gap: 12px;
+  justify-content: space-between; color: var(--muted); }
+.card h2 span { color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+.sample { margin: 6px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--size, 36px); line-height: 1.25; }
+.sample.alphabet, .sample.figures, .sample.code, .sample.icons { font-size: calc(var(--size, 36px) * .6); }
+.sample.paragraph { font-size: calc(var(--size, 36px) * .45); line-height: 1.55; max-width: 70ch; }
+body.custom .sample:not(.pangram) { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div><h1>$title</h1><div class="sub">$subtitle · $count style(s)</div></div>
+  <div class="controls">
+    <input type="text" id="text" placeholder="Type to preview your own text…" autofocus>
+    <label>Size <input type="range" id="size" min="12" max="120" value="36"> <span id="px">36px</span></label>
+  </div>
+</header>
+<main>
+$cards
+</main>
+<script>
+const samples = $samples;
+const text = document.getElementById("text"), size = document.getElementById("size");
+text.addEventListener("input", () => {
+  document.body.classList.toggle("custom", text.value !== "");
+  for (const el of document.querySelectorAll(".sample.pangram")) el.textContent = text.value || samples.pangram;
+});
+size.addEventListener("input", () => {
+  document.documentElement.style.setProperty("--size", size.value + "px");
+  document.getElementById("px").textContent = size.value + "px";
+});
+</script>
+</body>
+</html>

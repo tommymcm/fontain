@@ -14,6 +14,7 @@ from fontain.commands import (
     cmd_info,
     cmd_install,
     cmd_list,
+    cmd_preview,
     cmd_refresh,
     cmd_remove,
     cmd_repo_add,
@@ -115,6 +116,19 @@ def build_parser() -> FontainParser:
     s = p.command(sub, "remove", cmd_remove, help="remove installed fonts", aliases=["uninstall", "rm"])
     s.add_argument("fonts", nargs="+", metavar="font")
     s.add_argument("--no-cache", action="store_true", help="don't run fc-cache afterwards")
+
+    s = p.command(
+        sub,
+        "preview",
+        cmd_preview,
+        help="preview a font in your web browser",
+        description="Write an HTML page showing every style of FONT and open it in the default browser. "
+        "Works for installed fonts and, by downloading them temporarily, for fonts you haven't installed.",
+    )
+    s.add_argument("font")
+    s.add_argument("-w", "--weights", type=_int_list, help="only these weights, e.g. 400,700")
+    s.add_argument("-S", "--styles", type=_style_list, help="only these styles: normal,italic")
+    s.add_argument("--no-open", action="store_true", help="just write the page and print its path")
 
     s = p.command(
         sub,

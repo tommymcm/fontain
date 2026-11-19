@@ -38,6 +38,7 @@ uv run mypy              # type check
 - `src/fontain/repl.py`: the interactive shell and script runner.
 - `src/fontain/completion.py`: shell tab completion.
 - `src/fontain/logo.py`: the logo shown when the shell starts.
+- `src/fontain/preview.py` and `assets/preview.html`: the browser preview page.
 
 ## Adding a font source
 
