@@ -2,9 +2,9 @@
 
 import shlex
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
-from fontain import __version__, completion, index, paths, repos, sources
+from fontain import __version__, completion, fontcache, index, paths, repos, sources
 
 try:
     import readline
@@ -109,41 +109,87 @@ def _save_history() -> None:
 # --- the loop -----------------------------------------------------------------
 
 
+def execute(
+    line: str,
+    run: Callable[[list[str]], int],
+    help_text: Callable[[str | None], None],
+    commands: list[str] | None = None,
+    in_script: bool = False,
+) -> int | None:
+    """Run one line (shell or script). Returns its exit code, or None for `exit`.
+
+    Blank lines and ``#`` comments do nothing; a leading ``fontain`` is ignored.
+    """
+    try:
+        words = shlex.split(line, comments=True)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if words and words[0] == "fontain":  # tolerate habit
+        words = words[1:]
+    if not words:
+        return 0
+    cmd = words[0]
+    if cmd in EXIT_WORDS:
+        return None
+    if cmd in HELP_WORDS:
+        help_text(words[1] if len(words) > 1 else None)
+        return 0
+    if in_script and cmd in ("shell", "run"):
+        print(f"error: `{cmd}` can't be used inside a script", file=sys.stderr)
+        return 2
+    if cmd == "shell":
+        print("Already in the fontain shell.")
+        return 0
+    if commands is not None and cmd not in commands and not cmd.startswith("-"):
+        print(f"error: unknown command {cmd!r} (type `help` for a list)", file=sys.stderr)
+        return 2
+    try:
+        return run(words)
+    except SystemExit as e:  # argparse error or --help; it already printed why
+        return e.code if isinstance(e.code, int) else 2
+
+
 def run_line(
     line: str,
     run: Callable[[list[str]], int],
     help_text: Callable[[str | None], None],
     commands: list[str] | None = None,
 ) -> bool:
-    """Run one line. Returns False when the user asked to leave."""
+    """Run one shell line. Returns False when the user asked to leave."""
     try:
-        words = shlex.split(line)
-    except ValueError as e:
-        print(f"error: {e}", file=sys.stderr)
-        return True
-    if words and words[0] == "fontain":  # tolerate habit
-        words = words[1:]
-    if not words:
-        return True
-    cmd = words[0]
-    if cmd in EXIT_WORDS:
-        return False
-    if cmd in HELP_WORDS:
-        help_text(words[1] if len(words) > 1 else None)
-        return True
-    if cmd == "shell":
-        print("Already in the fontain shell.")
-        return True
-    if commands is not None and cmd not in commands and not cmd.startswith("-"):
-        print(f"error: unknown command {cmd!r} (type `help` for a list)", file=sys.stderr)
-        return True
-    try:
-        run(words)
-    except SystemExit:
-        pass  # argparse already printed usage/--help; stay in the shell
+        return execute(line, run, help_text, commands) is not None
     except KeyboardInterrupt:
         print("\ninterrupted", file=sys.stderr)
-    return True
+        return True
+
+
+def run_script(
+    lines: Iterable[str],
+    name: str,
+    run: Callable[[list[str]], int],
+    help_text: Callable[[str | None], None],
+    commands: list[str] | None = None,
+    keep_going: bool = False,
+) -> int:
+    """Run each line as a command. Stops at the first failure unless ``keep_going``.
+
+    The font cache is rebuilt once at the end rather than after every command.
+    Returns 0, or the exit code of the (last) failing command.
+    """
+    status = 0
+    with fontcache.deferred():
+        for number, line in enumerate(lines, 1):
+            rc = execute(line, run, help_text, commands, in_script=True)
+            sys.stdout.flush()  # keep output and errors in order when redirected to a log
+            if rc is None:  # `exit`
+                break
+            if rc:
+                print(f"{name}:{number}: `{line.strip()}` failed (exit {rc})", file=sys.stderr)
+                status = rc
+                if not keep_going:
+                    break
+    return status
 
 
 def repl(

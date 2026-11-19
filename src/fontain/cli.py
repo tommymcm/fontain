@@ -404,6 +404,18 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("shell", help="interactive shell (also: run `fontain` with no arguments)")
     s.set_defaults(func=cmd_shell)
 
+    s = sub.add_parser(
+        "run", help="run commands from a script file or stdin",
+        description="Run one fontain command per line, as typed in the shell: shell-style quoting, "
+        "blank lines and # comments are ignored. Stops at the first failing command. The font "
+        "cache is rebuilt once at the end. Make a script executable with the first line "
+        "`#!/usr/bin/env -S fontain run`. Piping into `fontain` with no arguments also runs a script.",
+    )
+    s.add_argument("script", nargs="?", default="-", help="script file (default or `-`: stdin)")
+    s.add_argument("-k", "--keep-going", action="store_true",
+                   help="run every line even if one fails (still exits non-zero)")
+    s.set_defaults(func=cmd_run)
+
     # Hidden helper used by the completion scripts (no help= keeps it out of --help).
     s = sub.add_parser("__complete")
     s.add_argument("what", choices=["installed", "installed-keys", "consent", "accept", "decline"])
@@ -415,7 +427,8 @@ def cmd_shell(args) -> int:
     return start_shell()
 
 
-def start_shell() -> int:
+def _shell_context():
+    """Command names, sub-actions and a `help` printer, shared by the shell and scripts."""
     parser = build_parser()
     sub = parser._subparsers._group_actions[0]
     commands = [name for name in sub.choices if name not in repl.HIDDEN]
@@ -432,14 +445,42 @@ def start_shell() -> int:
         else:
             err(f"unknown command {cmd!r}")
 
+    return commands, subcommands, help_text
+
+
+def start_shell() -> int:
+    commands, subcommands, help_text = _shell_context()
     art = logo.banner(shutil.get_terminal_size().columns)
     return repl.repl(run, help_text, repl.Completer(commands, subcommands), logo=art)
 
 
+def run_script(source: str, keep_going: bool = False) -> int:
+    """Run a script file, or stdin when ``source`` is ``-``."""
+    if source == "-":
+        name, lines = "<stdin>", sys.stdin
+    else:
+        try:
+            with open(source, encoding="utf-8") as f:
+                lines = f.read().splitlines()
+        except (OSError, UnicodeDecodeError) as e:
+            err(f"can't read script {source}: {e}")
+            return 1
+        name = source
+    commands, _, help_text = _shell_context()
+    return repl.run_script(lines, name, run, help_text, commands, keep_going=keep_going)
+
+
+def cmd_run(args) -> int:
+    return run_script(args.script, keep_going=args.keep_going)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else list(argv)
-    if not argv and sys.stdin.isatty() and sys.stdout.isatty():
-        return start_shell()
+    if not argv:
+        if not sys.stdin.isatty():  # `fontain < fonts.txt`, `cat fonts.txt | fontain`
+            return run_script("-")
+        if sys.stdout.isatty():
+            return start_shell()
     return run(argv)
 
 

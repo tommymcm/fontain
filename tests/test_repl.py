@@ -77,9 +77,14 @@ def test_help(monkeypatch, capsys):
     assert "Already in the fontain shell" in out
 
 
-def test_no_args_without_tty_keeps_error(capsys):
+def test_no_args_with_terminal_stdin_but_redirected_stdout_is_an_error(monkeypatch):
+    class TTY:
+        def isatty(self):
+            return True
+
+    monkeypatch.setattr("sys.stdin", TTY())
     with pytest.raises(SystemExit):
-        cli.main([])  # stdin isn't a terminal under pytest
+        cli.main([])  # stdout is captured (not a terminal): no shell, no script
 
 
 @pytest.fixture
