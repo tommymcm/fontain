@@ -21,6 +21,7 @@ from fontain.commands import (
     cmd_repo_prefer,
     cmd_repo_remove,
     cmd_search,
+    cmd_update,
 )
 from fontain.output import err, table
 from fontain.sources import SOURCES, SourceError
@@ -113,6 +114,20 @@ def build_parser() -> FontainParser:
 
     s = p.command(sub, "remove", cmd_remove, help="remove installed fonts", aliases=["uninstall", "rm"])
     s.add_argument("fonts", nargs="+", metavar="font")
+    s.add_argument("--no-cache", action="store_true", help="don't run fc-cache afterwards")
+
+    s = p.command(
+        sub,
+        "update",
+        cmd_update,
+        help="update installed fonts whose source has changed",
+        aliases=["upgrade"],
+        description="Fetch each source again and reinstall installed fonts whose files changed there, "
+        "keeping the weights and styles you chose. With no FONT, checks every installed font.",
+    )
+    s.add_argument("fonts", nargs="*", metavar="font", help="installed fonts to update (default: all)")
+    s.add_argument("-n", "--dry-run", action="store_true", help="only show what would be updated")
+    s.add_argument("-f", "--force", action="store_true", help="reinstall even if nothing changed")
     s.add_argument("--no-cache", action="store_true", help="don't run fc-cache afterwards")
 
     s = p.command(sub, "list", cmd_list, help="list installed fonts", aliases=["ls"])

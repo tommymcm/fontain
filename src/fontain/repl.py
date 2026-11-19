@@ -57,7 +57,7 @@ class Completer:
             return self.commands
         if cmd in self.subcommands and len(before) == 1:
             return self.subcommands[cmd]
-        if cmd in ("remove", "uninstall", "rm"):
+        if cmd in ("remove", "uninstall", "rm", "update", "upgrade"):
             return completion.installed_candidates() + completion.installed_candidates(qualified=True)
         if cmd == "repo" and len(before) == 2 and before[1] in ("remove", "rm", "prefer"):
             names = list(repos.load()) if before[1] != "prefer" else list(sources.registry())

@@ -1,7 +1,8 @@
 """Shell tab-completion scripts.
 
 The scripts complete subcommand names statically and ask
-``fontain __complete installed`` for the fonts that ``remove`` accepts.
+``fontain __complete installed`` for the installed fonts that ``remove`` and
+``update`` accept.
 That command only reads the installed-font manifest, so it is fast and
 never touches the network.
 """
@@ -74,7 +75,7 @@ _fontain() {
         return
     fi
     case ${words[1]} in
-        __REMOVE_PIPE__)
+        __FONT_CMDS_PIPE__)
             if [[ $cur == -* ]]; then
                 COMPREPLY=($(compgen -W "--no-cache --help" -- "$cur"))
                 return
@@ -106,7 +107,7 @@ _fontain() {
         return
     fi
     case $words[2] in
-        __REMOVE_PIPE__)
+        __FONT_CMDS_PIPE__)
             if [[ $PREFIX == *:* ]]; then
                 fonts=("${(@f)$(__HELPER__ __complete installed-keys 2>/dev/null)}")
             else
@@ -126,9 +127,9 @@ fi
 FISH = r"""# fontain fish completion. Enable with:  fontain completion fish | source
 complete -c fontain -f
 __FISH_COMMANDS__
-set -l __fontain_remove __REMOVE_SPACE__
-complete -c fontain -n "__fish_seen_subcommand_from $__fontain_remove" -a '(__HELPER__ __complete installed 2>/dev/null)' -d 'installed font'
-complete -c fontain -n "__fish_seen_subcommand_from $__fontain_remove" -l no-cache -d "don't run fc-cache afterwards"
+set -l __fontain_font_cmds __FONT_CMDS_SPACE__
+complete -c fontain -n "__fish_seen_subcommand_from $__fontain_font_cmds" -a '(__HELPER__ __complete installed 2>/dev/null)' -d 'installed font'
+complete -c fontain -n "__fish_seen_subcommand_from $__fontain_font_cmds" -l no-cache -d "don't run fc-cache afterwards"
 """
 
 
@@ -136,25 +137,25 @@ def _quote_single(s: str) -> str:
     return "'" + s.replace("'", "'\\''") + "'"
 
 
-def script(shell: str, commands: list[tuple[str, str]], remove_names: list[str]) -> str:
+def script(shell: str, commands: list[tuple[str, str]], font_commands: list[str]) -> str:
     """Render the completion script for ``shell``.
 
-    ``commands`` is ``(name, help)`` for each subcommand; ``remove_names`` is
-    ``remove`` plus its aliases.
+    ``commands`` is ``(name, help)`` for each subcommand; ``font_commands`` are
+    the names (with aliases) of commands whose arguments are installed fonts.
     """
     names = " ".join(n for n, _ in commands)
     if shell == "bash":
         return (
             BASH.replace("__COMMANDS__", names)
             .replace("__HELPER__", helper_command())
-            .replace("__REMOVE_PIPE__", "|".join(remove_names))
+            .replace("__FONT_CMDS_PIPE__", "|".join(font_commands))
         )
     if shell == "zsh":
         described = " ".join(_quote_single(f"{n}:{h}") for n, h in commands)
         return (
             ZSH.replace("__ZSH_COMMANDS__", described)
             .replace("__HELPER__", helper_command())
-            .replace("__REMOVE_PIPE__", "|".join(remove_names))
+            .replace("__FONT_CMDS_PIPE__", "|".join(font_commands))
         )
     if shell == "fish":
         lines = "\n".join(
@@ -163,7 +164,7 @@ def script(shell: str, commands: list[tuple[str, str]], remove_names: list[str])
         return (
             FISH.replace("__FISH_COMMANDS__", lines)
             .replace("__HELPER__", helper_command())
-            .replace("__REMOVE_SPACE__", " ".join(remove_names))
+            .replace("__FONT_CMDS_SPACE__", " ".join(font_commands))
         )
     raise ValueError(f"unsupported shell {shell!r}")
 

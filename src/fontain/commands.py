@@ -7,7 +7,7 @@ from collections.abc import Sequence
 
 from fontain import completion, fontcache, index, net, paths, repos, sources, store
 from fontain.output import err, table
-from fontain.sources import FETCH_ERRORS, SOURCES, Selection, SourceError
+from fontain.sources import FETCH_ERRORS, SOURCES, FontEntry, Selection, SourceError
 
 
 def _sources_for(specs: Sequence[str]) -> list[str]:
@@ -234,7 +234,8 @@ def cmd_repo_remove(args: argparse.Namespace) -> int:
 def cmd_completion(args: argparse.Namespace) -> int:
     parser = args.parser  # the top-level FontainParser, which records its subcommands
     commands = [(c.name, c.help) for c in parser.commands if not c.hidden]
-    remove_names = list(parser.find("remove").names)
+    # commands whose arguments are installed fonts complete from the manifest
+    font_commands = [name for cmd in ("remove", "update") for name in parser.find(cmd).names]
     if args.reset:
         completion.set_consent(None)
         for name in completion.AUTOLOAD_SHELLS:
@@ -269,7 +270,7 @@ def cmd_completion(args: argparse.Namespace) -> int:
     if not args.shell:
         err("specify a shell (bash, zsh, fish), or use --install")
         return 2
-    print(completion.script(args.shell, commands, remove_names), end="")
+    print(completion.script(args.shell, commands, font_commands), end="")
     return 0
 
 
@@ -285,3 +286,75 @@ def cmd_complete(args: argparse.Namespace) -> int:
             for name in completion.installed_candidates(qualified=args.what == "installed-keys"):
                 print(name)
     return 0
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    """Re-fetch sources and reinstall installed fonts whose source version changed."""
+    manifest = store.load_manifest()
+    failures = 0
+    if args.fonts:
+        keys = []
+        for spec in args.fonts:
+            try:
+                keys.append(store.find_installed(spec, manifest))
+            except store.StoreError as e:
+                err(str(e))
+                failures += 1
+    else:
+        keys = sorted(manifest, key=str.lower)
+    if not keys:
+        if not failures:
+            print("No fonts installed. Try `fontain search <name>`.")
+        return 1 if failures else 0
+
+    # Fetch each source's list fresh: the point is to see what changed upstream.
+    known = sources.registry()
+    latest: dict[str, dict[str, FontEntry]] = {}
+    for name in dict.fromkeys(manifest[k]["source"] for k in keys):
+        affected = [k for k in keys if manifest[k]["source"] == name]
+        if name not in known:
+            err(f"source {name!r} is no longer configured; can't update {', '.join(affected)}")
+            failures += len(affected)
+            continue
+        print(f"Checking {name}...", flush=True)
+        try:
+            latest[name] = {e.id: e for e in index.refresh(name)}
+        except FETCH_ERRORS as e:
+            err(f"{name}: {e}")
+            failures += len(affected)
+
+    updated = current = 0
+    for key in keys:
+        rec = manifest[key]
+        if rec["source"] not in latest:
+            continue  # already reported
+        entry = latest[rec["source"]].get(rec["id"])
+        if entry is None:
+            print(f"note: {key} is no longer offered by {rec['source']}; leaving it installed")
+            continue
+        old = rec.get("version", "")
+        if old and old == entry.version and not args.force:
+            current += 1
+            continue
+        change = f"{old or 'unknown'} -> {entry.version or 'unknown'}"
+        if args.dry_run:
+            print(f"Would update {key} ({change})")
+            updated += 1
+            continue
+        sel = Selection(frozenset(rec.get("weights", ())), frozenset(rec.get("styles", ())))
+        print(f"Updating {key} ({change})...", flush=True)
+        try:
+            new = store.install(entry, known[entry.source], sel, force=True)
+        except (SourceError, net.NetError, store.StoreError, OSError) as e:
+            err(f"{key}: {e} (the installed copy was kept)")
+            failures += 1
+            continue
+        updated += 1
+        if new is not None:
+            print(f"  {len(new['files'])} file(s) -> {new['dir']}")
+
+    if updated and not args.dry_run and not args.no_cache:
+        fontcache.refresh(paths.font_root())
+    verb = "would be updated" if args.dry_run else "updated"
+    print(f"{updated} {verb}, {current} already up to date.")
+    return 1 if failures else 0
