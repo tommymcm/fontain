@@ -4,8 +4,30 @@ version = "0.1.0"
 description = "Install and manage fonts from public repositories on unix systems"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.13"
+license-files = ["LICENSE"]
+authors = [{ name = "Tommy McMichen" }]
+keywords = ["fonts", "font-manager", "cli", "google-fonts", "nerd-fonts", "fontsource", "fontconfig"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Text Processing :: Fonts",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.11"
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/tommymcm/fontain"
+Issues = "https://github.com/tommymcm/fontain/issues"
 
 [project.scripts]
 fontain = "fontain.cli:main"
@@ -15,10 +37,23 @@ requires = ["uv_build>=0.11,<0.12"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "ruff>=0.14", "mypy>=1.18"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+check_untyped_defs = true
+warn_unused_ignores = true
 
 [tool.uv.build-backend]
 # Ships the bash ask-on-first-Tab loader to <prefix>/share/bash-completion/completions/fontain
