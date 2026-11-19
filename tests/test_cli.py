@@ -51,3 +51,10 @@ def test_bad_args():
         cli.main(["install", "x", "--weights", "bold"])
     with pytest.raises(SystemExit):
         cli.main(["install", "x", "--styles", "oblique"])
+
+
+def test_unknown_command_is_short_and_hides_internals(capsys):
+    assert cli.main(["frob"]) == 2
+    err = capsys.readouterr().err
+    assert err == "error: unknown command 'frob' (see `fontain --help`)\n"
+    assert cli.main(["__complete", "consent"]) == 0  # internal commands still work

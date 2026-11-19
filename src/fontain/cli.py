@@ -273,7 +273,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def run(argv: Sequence[str]) -> int:
     """Run one command line. argparse errors raise SystemExit (callers decide)."""
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    if argv and not argv[0].startswith("-") and parser.find(argv[0]) is None:
+        # argparse would list every choice, including internal ones; keep it short
+        err(f"unknown command {argv[0]!r} (see `fontain --help`)")
+        return 2
+    args = parser.parse_args(argv)
     try:
         rc: int = args.func(args)
     except KeyboardInterrupt:

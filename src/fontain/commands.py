@@ -178,7 +178,7 @@ def cmd_repo_prefer(args: argparse.Namespace) -> int:
     known = sources.registry()
     if args.name not in known:
         err(f"unknown source {args.name!r} (choose from {', '.join(known)})")
-        return 1
+        return 2
     repos.set_preferred(args.name)
     print(f"Bare font names now resolve from {args.name!r} first.")
     return 0

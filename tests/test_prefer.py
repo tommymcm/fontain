@@ -52,7 +52,7 @@ def test_env_override(fake, monkeypatch):
 
 
 def test_unknown_and_clear(fake):
-    assert cli.main(["repo", "prefer", "nope"]) == 1
+    assert cli.main(["repo", "prefer", "nope"]) == 2
     assert repos.preferred() is None
     cli.main(["repo", "prefer", "google"])
     assert cli.main(["repo", "prefer", "--clear"]) == 0
