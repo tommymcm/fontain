@@ -1,4 +1,5 @@
 import pytest
+from helpers import write_manifest
 
 from fontain import cli, fontcache, index, repl, repos, store
 
@@ -26,18 +27,7 @@ def _session(monkeypatch, lines):
 @pytest.fixture
 def installed(monkeypatch):
     monkeypatch.setattr(fontcache, "refresh", lambda root, quiet=False: True)
-    store.save_manifest(
-        {
-            k: {
-                "source": k.split(":")[0],
-                "id": k.split(":")[1],
-                "family": k.split(":")[1],
-                "files": [],
-                "installed": "",
-            }
-            for k in ("fontsource:inter", "fontsource:inter-tight", "nerd:JetBrainsMono")
-        }
-    )
+    write_manifest("fontsource:inter", "fontsource:inter-tight", "nerd:JetBrainsMono")
 
 
 def test_commands_run_and_errors_dont_exit(monkeypatch, capsys, installed):

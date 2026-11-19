@@ -1,33 +1,14 @@
 import pytest
+from helpers import FakeSource, entry
 
 from fontain import cli, fontcache, sources, store
-from fontain.sources.base import FontEntry
 
-
-class FakeSource:
-    name = "fake"
-
-    def fetch_index(self):
-        return [
-            FontEntry(
-                source="fake",
-                id="mono",
-                family="Fake Mono",
-                category="monospace",
-                weights=(400, 700),
-                styles=("normal",),
-            )
-        ]
-
-    def install_files(self, entry, dest, sel):
-        f = dest / "FakeMono-Regular.ttf"
-        f.write_bytes(b"x")
-        return [f]
+FONT = entry("mono", "Fake Mono", category="monospace", weights=(400, 700), styles=("normal",))
 
 
 @pytest.fixture
 def fake(monkeypatch):
-    monkeypatch.setattr(sources, "registry", lambda: {"fake": FakeSource()})
+    monkeypatch.setattr(sources, "registry", lambda: {"fake": FakeSource(FONT)})
     calls = []
     monkeypatch.setattr(fontcache, "refresh", lambda root, quiet=False: calls.append(root) or True)
     return calls

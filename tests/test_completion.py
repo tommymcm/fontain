@@ -4,27 +4,13 @@ import subprocess
 import sys
 
 import pytest
+from helpers import write_manifest
 
 from fontain import cli, completion, store
 
 
-def _install(*keys):
-    store.save_manifest(
-        {
-            k: {
-                "source": k.split(":")[0],
-                "id": k.split(":", 1)[1],
-                "family": k,
-                "files": [],
-                "installed": "",
-            }
-            for k in keys
-        }
-    )
-
-
 def test_one_removable_name_per_font():
-    _install("fontsource:atkinson-hyperlegible", "nerd:JetBrainsMono", "work:Acme Sans")
+    write_manifest("fontsource:atkinson-hyperlegible", "nerd:JetBrainsMono", "work:Acme Sans")
     assert completion.installed_candidates() == ["Acme Sans", "atkinson-hyperlegible", "JetBrainsMono"]
     assert completion.installed_candidates(qualified=True) == [
         "fontsource:atkinson-hyperlegible",
@@ -35,12 +21,12 @@ def test_one_removable_name_per_font():
 
 def test_ambiguous_ids_are_qualified():
     # "Inter" and "inter" collide because remove ignores case
-    _install("fontsource:inter", "inter:Inter", "nerd:JetBrainsMono")
+    write_manifest("fontsource:inter", "inter:Inter", "nerd:JetBrainsMono")
     assert completion.installed_candidates() == ["fontsource:inter", "inter:Inter", "JetBrainsMono"]
 
 
 def test_every_candidate_is_removable():
-    _install("fontsource:inter", "inter:Inter", "google:inter", "work:Acme Sans", "nerd:Acme")
+    write_manifest("fontsource:inter", "inter:Inter", "google:inter", "work:Acme Sans", "nerd:Acme")
     manifest = store.load_manifest()
     for qualified in (False, True):
         names = completion.installed_candidates(qualified)
@@ -49,7 +35,7 @@ def test_every_candidate_is_removable():
 
 
 def test_complete_command(capsys):
-    _install("nerd:JetBrainsMono")
+    write_manifest("nerd:JetBrainsMono")
     assert cli.main(["__complete", "installed"]) == 0
     assert capsys.readouterr().out.split() == ["JetBrainsMono"]
     assert cli.main(["__complete", "installed-keys"]) == 0
@@ -136,7 +122,7 @@ def test_bash_completion(bash_complete, line, expected):
 @pytest.mark.skipif(BASH is None, reason="bash not installed")
 def test_bash_end_to_end_without_fontain_on_path(tmp_path, capsys):
     """The real script + real helper, with no `fontain` executable on PATH."""
-    _install("fontsource:atkinson-hyperlegible", "fontsource:inter", "inter:Inter")
+    write_manifest("fontsource:atkinson-hyperlegible", "fontsource:inter", "inter:Inter")
     cli.main(["completion", "bash"])
     script = tmp_path / "fontain.bash"
     script.write_text(capsys.readouterr().out)

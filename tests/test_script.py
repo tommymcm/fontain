@@ -4,8 +4,11 @@ import subprocess
 import sys
 
 import pytest
+from helpers import FakeSource, entry
 
-from fontain import cli, fontcache, repl, store
+from fontain import cli, fontcache, repl, sources, store
+
+FONTS = [entry(i) for i in ("mono", "sans", "Acme Sans")]
 
 SCRIPT = """\
 # my fonts
@@ -15,25 +18,9 @@ fontain list                   # habitual prefix is fine
 """
 
 
-class FakeSource:
-    name = "fake"
-
-    def fetch_index(self):
-        from fontain.sources.base import FontEntry
-
-        return [FontEntry(source="fake", id=i, family=i.title()) for i in ("mono", "sans", "Acme Sans")]
-
-    def install_files(self, entry, dest, sel):
-        f = dest / f"{entry.id}-Regular.ttf"
-        f.write_bytes(b"x")
-        return [f]
-
-
 @pytest.fixture
 def fake(monkeypatch):
-    from fontain import sources
-
-    monkeypatch.setattr(sources, "registry", lambda: {"fake": FakeSource()})
+    monkeypatch.setattr(sources, "registry", lambda: {"fake": FakeSource(*FONTS)})
     rebuilds = []
     monkeypatch.setattr(fontcache, "_rebuild", lambda root, quiet=False: rebuilds.append(root) or True)
     return rebuilds
