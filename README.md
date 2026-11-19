@@ -28,6 +28,8 @@ fontain install inter                   # install font by name
 fontain install google:lato -w 400,700  # pick a source repo, and weights
 fontain list                            # list installed fonts
 fontain remove inter                    # uninstall a font
+fontain --help                          # list all commands
+fontain <command> --help                  # list flags for command
 ```
 
 ### Add your own repositories
@@ -38,6 +40,16 @@ fontain repo add work ~/fonts                      # a local folder
 fontain install mona:monaspace-static
 fontain repo prefer work                           # look here first for bare names
 ```
+
+### Scripts
+
+Put one command per line in a file to run them in sequence:
+
+```sh
+fontain run fonts.txt                   # or: fontain < fonts.txt
+```
+
+Blank lines and `#` comments are ignored. The script stops at the first failing command unless you pass `--keep-going`.
 
 ### Tab completion
 
