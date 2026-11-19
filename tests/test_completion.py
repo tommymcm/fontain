@@ -90,7 +90,7 @@ def _bash_runner(script, env):
             env=env,
             check=True,
         )
-        return [l for l in result.stdout.splitlines() if l]
+        return [line for line in result.stdout.splitlines() if line]
 
     return run
 

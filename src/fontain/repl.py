@@ -1,11 +1,14 @@
 """Interactive shell: each line is one fontain command, e.g. ``search roboto``."""
 
+import contextlib
 import shlex
 import sys
 from collections.abc import Callable, Iterable
+from types import ModuleType
 
 from fontain import __version__, completion, fontcache, index, paths, repos, sources
 
+readline: ModuleType | None
 try:
     import readline
 except ImportError:  # e.g. some minimal Python builds
@@ -70,6 +73,7 @@ class Completer:
     def complete(self, text: str, state: int) -> str | None:
         """readline completer hook."""
         if state == 0:
+            assert readline is not None  # only installed as a hook when readline exists
             line = readline.get_line_buffer()[: readline.get_endidx()]
             try:
                 # Python's readline adds no space after a unique match; add it ourselves
@@ -89,10 +93,8 @@ def _setup_readline(completer: Completer) -> None:
         readline.parse_and_bind("bind ^I rl_complete")
     else:
         readline.parse_and_bind("tab: complete")
-    try:
+    with contextlib.suppress(OSError, ValueError):  # no history yet, or an unreadable file
         readline.read_history_file(history_file())
-    except (OSError, ValueError):
-        pass
     readline.set_history_length(1000)
 
 

@@ -10,12 +10,14 @@ background shows through.
 import os
 import struct
 import zlib
+from collections.abc import Mapping
 from importlib import resources
 
 Pixel = tuple[int, int, int, int]
 Image = list[list[Pixel]]
 
 BACKGROUND = (255, 255, 255)  # treated as transparent
+CLEAR: Pixel = (0, 0, 0, 0)
 
 
 # --- minimal PNG decoding (8-bit RGBA, non-interlaced) ---------------------------
@@ -63,7 +65,11 @@ def decode_png(data: bytes) -> Image:
                 line[i] = (line[i] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 0xFF
         rows.append(line)
         prev = line
-    return [[tuple(row[x * 4 : x * 4 + 4]) for x in range(width)] for row in rows]
+
+    def pixel(row: bytearray, x: int) -> Pixel:
+        return (row[4 * x], row[4 * x + 1], row[4 * x + 2], row[4 * x + 3])
+
+    return [[pixel(row, x) for x in range(width)] for row in rows]
 
 
 # --- rendering ------------------------------------------------------------------------
@@ -80,7 +86,10 @@ def _to_256(r: int, g: int, b: int) -> int:
     cube = (steps[ri], steps[gi], steps[bi])
     grey_i = max(0, min(23, round(((r + g + b) / 3 - 8) / 10)))
     grey = 8 + grey_i * 10
-    dist = lambda c: (c[0] - r) ** 2 + (c[1] - g) ** 2 + (c[2] - b) ** 2  # noqa: E731
+
+    def dist(c: tuple[int, int, int]) -> int:
+        return (c[0] - r) ** 2 + (c[1] - g) ** 2 + (c[2] - b) ** 2
+
     if dist((grey, grey, grey)) < dist(cube):
         return 232 + grey_i
     return 16 + 36 * ri + 6 * gi + bi
@@ -95,15 +104,15 @@ def _sgr(rgb: Pixel, ground: int, truecolor: bool) -> str:
 
 def render(img: Image, truecolor: bool = True) -> str:
     if len(img) % 2:
-        img = img + [[(0, 0, 0, 0)] * len(img[0])]
+        img = [*img, [CLEAR] * len(img[0])]
     lines = []
-    for top, bottom in zip(img[::2], img[1::2]):
+    for top, bottom in zip(img[::2], img[1::2], strict=True):
         # trim fully transparent columns on the right
         width = len(top)
         while width and top[width - 1][3] < 128 and bottom[width - 1][3] < 128:
             width -= 1
         cells = []
-        for t, b in zip(top[:width], bottom[:width]):
+        for t, b in zip(top[:width], bottom[:width], strict=True):
             t_on, b_on = t[3] >= 128, b[3] >= 128
             if t_on and b_on:
                 cells.append(_sgr(t, 38, truecolor) + _sgr(b, 48, truecolor) + "▀")
@@ -120,9 +129,10 @@ def render(img: Image, truecolor: bool = True) -> str:
 # --- choosing what to show -----------------------------------------------------------
 
 
-def color_mode(env: dict[str, str] | None = None) -> str | None:
+def color_mode(env: Mapping[str, str] | None = None) -> str | None:
     """``truecolor``, ``256`` or None (no colour: show no logo)."""
-    env = os.environ if env is None else env
+    if env is None:
+        env = os.environ
     term = env.get("TERM", "")
     if "NO_COLOR" in env or term in ("", "dumb"):
         return None
@@ -135,10 +145,10 @@ def color_mode(env: dict[str, str] | None = None) -> str | None:
 
 def load() -> Image:
     data = resources.files("fontain").joinpath("assets/logo.png").read_bytes()
-    return [[(0, 0, 0, 0) if p[:3] == BACKGROUND else p for p in row] for row in decode_png(data)]
+    return [[CLEAR if p[:3] == BACKGROUND else p for p in row] for row in decode_png(data)]
 
 
-def banner(columns: int, env: dict[str, str] | None = None) -> str | None:
+def banner(columns: int, env: Mapping[str, str] | None = None) -> str | None:
     """The logo for a terminal ``columns`` wide, or None if it won't fit or there's no colour."""
     mode = color_mode(env)
     if mode is None:

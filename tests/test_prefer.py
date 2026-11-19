@@ -37,7 +37,7 @@ def test_default_order(fake):
 @pytest.mark.parametrize("pref", ["mine", "google"])
 def test_preferred_first(fake, pref, capsys):
     assert cli.main(["repo", "prefer", pref]) == 0
-    assert list(sources.registry())[0] == pref
+    assert next(iter(sources.registry())) == pref
     assert _resolve()[0] == pref
     assert cli.main(["repo", "prefer"]) == 0
     assert capsys.readouterr().out.strip().endswith(pref)
@@ -67,4 +67,4 @@ def test_removing_preferred_repo_clears(fake):
 
 def test_stale_preference_ignored(fake):
     repos.set_preferred("gone")
-    assert list(sources.registry())[0] == "fontsource"
+    assert next(iter(sources.registry())) == "fontsource"

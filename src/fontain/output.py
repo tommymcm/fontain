@@ -11,4 +11,4 @@ def table(rows: list[list[str]], header: list[str]) -> None:
     rows = [header, *rows]
     widths = [max(len(r[i]) for r in rows) for i in range(len(header))]
     for r in rows:
-        print("  ".join(c.ljust(w) for c, w in zip(r, widths)).rstrip())
+        print("  ".join(c.ljust(w) for c, w in zip(r, widths, strict=True)).rstrip())

@@ -1,5 +1,7 @@
 """Handlers for each fontain subcommand. Each takes parsed ``args`` and returns an exit code."""
 
+import argparse
+import contextlib
 import sys
 from collections.abc import Sequence
 
@@ -20,7 +22,7 @@ def _sources_for(specs: Sequence[str]) -> list[str]:
     return needed
 
 
-def cmd_search(args) -> int:
+def cmd_search(args: argparse.Namespace) -> int:
     known = sources.registry()
     if args.source and args.source not in known:
         err(f"unknown source {args.source!r} (choose from {', '.join(known)})")
@@ -48,7 +50,7 @@ def cmd_search(args) -> int:
     return 0
 
 
-def cmd_info(args) -> int:
+def cmd_info(args: argparse.Namespace) -> int:
     indexes = index.load_many(_sources_for([args.font]))
     try:
         resolved = index.resolve(args.font, indexes)
@@ -75,7 +77,7 @@ def cmd_info(args) -> int:
     return 0
 
 
-def cmd_install(args) -> int:
+def cmd_install(args: argparse.Namespace) -> int:
     known = sources.registry()
     indexes = index.load_many(_sources_for(args.fonts))
     sel = Selection(weights=args.weights or frozenset(), styles=args.styles or frozenset())
@@ -102,7 +104,7 @@ def cmd_install(args) -> int:
     return 1 if failures else 0
 
 
-def cmd_remove(args) -> int:
+def cmd_remove(args: argparse.Namespace) -> int:
     failures = changed = 0
     for spec in args.fonts:
         try:
@@ -118,7 +120,7 @@ def cmd_remove(args) -> int:
     return 1 if failures else 0
 
 
-def cmd_list(args) -> int:
+def cmd_list(args: argparse.Namespace) -> int:
     manifest = store.load_manifest()
     if not manifest:
         print("No fonts installed. Try `fontain search <name>`.")
@@ -133,7 +135,7 @@ def cmd_list(args) -> int:
     return 0
 
 
-def cmd_refresh(args) -> int:
+def cmd_refresh(args: argparse.Namespace) -> int:
     known = sources.registry()
     if unknown := [n for n in args.sources if n not in known]:
         err(f"unknown source(s): {', '.join(unknown)} (choose from {', '.join(known)})")
@@ -148,11 +150,11 @@ def cmd_refresh(args) -> int:
     return 1 if failures else 0
 
 
-def cmd_cache(args) -> int:
+def cmd_cache(args: argparse.Namespace) -> int:
     return 0 if fontcache.refresh(paths.font_root()) else 1
 
 
-def cmd_repo_list(args) -> int:
+def cmd_repo_list(args: argparse.Namespace) -> int:
     pref = repos.preferred()
     rows = [[name, "built-in", ""] for name in SOURCES]
     rows += [[name, cfg.get("type", "?"), cfg.get("target", "")] for name, cfg in repos.load().items()]
@@ -164,7 +166,7 @@ def cmd_repo_list(args) -> int:
     return 0
 
 
-def cmd_repo_prefer(args) -> int:
+def cmd_repo_prefer(args: argparse.Namespace) -> int:
     if args.clear:
         repos.set_preferred(None)
         print("Cleared preferred source; bare names use the default order.")
@@ -182,7 +184,7 @@ def cmd_repo_prefer(args) -> int:
     return 0
 
 
-def cmd_repo_add(args) -> int:
+def cmd_repo_add(args: argparse.Namespace) -> int:
     existing = repos.load()
     repos.check_name(args.name, set(SOURCES), existing)
     cfg = repos.parse_spec(args.spec)
@@ -206,12 +208,13 @@ def cmd_repo_add(args) -> int:
     repos.save(existing)
     found = "" if args.no_check else f" with {len(entries)} font(s)"
     print(
-        f"Added {cfg['type']} repository {args.name!r}{found}. Install with `fontain install {args.name}:<font>`."
+        f"Added {cfg['type']} repository {args.name!r}{found}. "
+        f"Install with `fontain install {args.name}:<font>`."
     )
     return 0
 
 
-def cmd_repo_remove(args) -> int:
+def cmd_repo_remove(args: argparse.Namespace) -> int:
     existing = repos.load()
     if existing.pop(args.name, None) is None:
         err(f"no user repository named {args.name!r}")
@@ -228,21 +231,19 @@ def cmd_repo_remove(args) -> int:
     return 0
 
 
-def cmd_completion(args) -> int:
+def cmd_completion(args: argparse.Namespace) -> int:
     parser = args.parser  # the top-level FontainParser, which records its subcommands
     commands = [(c.name, c.help) for c in parser.commands if not c.hidden]
     remove_names = list(parser.find("remove").names)
     if args.reset:
         completion.set_consent(None)
-        for shell in completion.AUTOLOAD_SHELLS:
-            try:
-                completion.uninstall(shell)
-            except completion.CompletionError:
-                pass  # not ours; leave it alone
+        for name in completion.AUTOLOAD_SHELLS:
+            with contextlib.suppress(completion.CompletionError):  # not ours; leave it alone
+                completion.uninstall(name)
         print("Reset: you'll be asked about tab completion the next time you press Tab after `fontain`.")
         return 0
     if args.install or args.uninstall:
-        shell = args.shell or completion.detect_shell()
+        shell: str | None = args.shell or completion.detect_shell()
         if not shell:
             err("couldn't detect your shell from $SHELL; pass it explicitly, e.g. `--install bash`")
             return 2
@@ -260,9 +261,9 @@ def cmd_completion(args) -> int:
                     "(e.g. `dnf install bash-completion` / `apt install bash-completion`)"
                 )
         else:
-            path = completion.uninstall(shell)
+            removed = completion.uninstall(shell)
             completion.set_consent("no")
-            print(f"Removed {path}." if path else f"Disabled {shell} tab completion.")
+            print(f"Removed {removed}." if removed else f"Disabled {shell} tab completion.")
             print("It takes effect in new shells; you won't be asked again.")
         return 0
     if not args.shell:
@@ -272,7 +273,7 @@ def cmd_completion(args) -> int:
     return 0
 
 
-def cmd_complete(args) -> int:
+def cmd_complete(args: argparse.Namespace) -> int:
     match args.what:
         case "consent":
             print(completion.get_consent())

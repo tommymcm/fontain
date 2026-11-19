@@ -51,11 +51,13 @@ class Selection:
     styles: frozenset[str] = frozenset()
 
     def wants(self, weight: int | None, style: str | None) -> bool:
+        """Unknown weights/styles (None) are always wanted, e.g. variable fonts."""
         if self.weights and weight is not None and weight not in self.weights:
             return False
-        if self.styles and style is not None and style not in self.styles:
-            return False
-        return True
+        return not (self.styles and style is not None and style not in self.styles)
+
+
+ALL_VARIANTS = Selection()
 
 
 class Source(Protocol):

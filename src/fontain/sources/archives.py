@@ -5,14 +5,14 @@ import zipfile
 from collections.abc import Iterable
 from pathlib import Path, PurePosixPath
 
-from fontain.sources.base import Selection
+from fontain.sources.base import ALL_VARIANTS, Selection
 from fontain.sources.filenames import basename, parse_filename
 
 # Only one format is installed per font so fontconfig doesn't see duplicates.
 FORMAT_PREFERENCE = (".ttf", ".otf", ".ttc")
 
 
-def pick_fonts(paths: Iterable[str], sel: Selection = Selection()) -> list[str]:
+def pick_fonts(paths: Iterable[str], sel: Selection = ALL_VARIANTS) -> list[str]:
     """Choose which of ``paths`` to install.
 
     Keeps the most preferred font format present, honours ``sel``, skips
@@ -40,7 +40,7 @@ def pick_fonts(paths: Iterable[str], sel: Selection = Selection()) -> list[str]:
     return out
 
 
-def extract_fonts(archive: Path, dest: Path, sel: Selection = Selection()) -> list[Path]:
+def extract_fonts(archive: Path, dest: Path, sel: Selection = ALL_VARIANTS) -> list[Path]:
     """Extract font files from a zip or tar archive into ``dest``.
 
     Members are flattened to their basename, so nothing can escape ``dest``,
@@ -59,12 +59,12 @@ def extract_fonts(archive: Path, dest: Path, sel: Selection = Selection()) -> li
     with tarfile.open(archive, "r:*") as tar:
         members = {m.name: m for m in tar.getmembers() if m.isfile()}
         for name in pick_fonts(members, sel):
-            src = tar.extractfile(members[name])
-            if src is None:
+            member = tar.extractfile(members[name])
+            if member is None:
                 continue
             target = dest / basename(name)
-            with src, target.open("wb") as out:
-                out.write(src.read())
+            with member, target.open("wb") as out:
+                out.write(member.read())
             written.append(target)
     return written
 

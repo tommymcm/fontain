@@ -1,5 +1,6 @@
 """Installed-font bookkeeping: where files live and what fontain owns."""
 
+import contextlib
 import shutil
 import tempfile
 from datetime import UTC, datetime
@@ -100,9 +101,7 @@ def remove(key: str) -> bool:
     target = font_dir(record["source"], record["id"])
     if target.exists():
         shutil.rmtree(target)
-    try:
-        target.parent.rmdir()  # drop the source dir once it is empty
-    except OSError:
-        pass
+    with contextlib.suppress(OSError):  # drop the source dir once it is empty
+        target.parent.rmdir()
     save_manifest(manifest)
     return True
