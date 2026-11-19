@@ -102,10 +102,8 @@ def test_no_args_with_terminal_stdin_but_redirected_stdout_is_an_error(monkeypat
 
 @pytest.fixture
 def completer():
-    parser = cli.build_parser()
-    sub = parser._subparsers._group_actions[0]
-    commands = [n for n in sub.choices if n not in repl.HIDDEN]
-    return repl.Completer(commands, {"repo": ["add", "list", "ls", "remove", "rm", "prefer"]})
+    commands, subcommands, _ = cli.shell_context()  # the same lists the real shell uses
+    return repl.Completer(commands, subcommands)
 
 
 def test_readline_hook_appends_space(completer, monkeypatch):

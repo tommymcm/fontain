@@ -43,4 +43,13 @@ def registry() -> dict[str, Source]:
     return out
 
 
-__all__ = ["FETCH_ERRORS", "SOURCES", "FontEntry", "Selection", "Source", "SourceError", "make_source", "registry"]
+__all__ = [
+    "FETCH_ERRORS",
+    "SOURCES",
+    "FontEntry",
+    "Selection",
+    "Source",
+    "SourceError",
+    "make_source",
+    "registry",
+]

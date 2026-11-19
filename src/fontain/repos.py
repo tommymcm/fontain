@@ -28,8 +28,6 @@ def _read_json(path: Path) -> dict[str, Any]:
     return data
 
 
-
-
 def load() -> dict[str, dict[str, Any]]:
     return _read_json(paths.config_file())
 

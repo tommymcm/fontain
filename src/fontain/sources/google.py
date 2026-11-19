@@ -14,7 +14,6 @@ LICENSE_DIRS = ("ofl", "apache", "ufl")
 LICENSE_NAMES = {"ofl": "OFL-1.1", "apache": "Apache-2.0", "ufl": "UFL-1.0"}
 
 
-
 def slugify(family: str) -> str:
     return re.sub(r"[^a-z0-9]", "", family.lower())
 
