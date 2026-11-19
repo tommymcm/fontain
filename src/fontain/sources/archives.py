@@ -6,14 +6,10 @@ from collections.abc import Iterable
 from pathlib import Path, PurePosixPath
 
 from fontain.sources.base import Selection
-from fontain.sources.google import parse_filename
+from fontain.sources.filenames import basename, parse_filename
 
 # Only one format is installed per font so fontconfig doesn't see duplicates.
 FORMAT_PREFERENCE = (".ttf", ".otf", ".ttc")
-
-
-def basename(path: str) -> str:
-    return PurePosixPath(path.replace("\\", "/")).name
 
 
 def pick_fonts(paths: Iterable[str], sel: Selection = Selection()) -> list[str]:

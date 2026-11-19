@@ -6,29 +6,13 @@ from typing import Any
 
 from fontain import net
 from fontain.sources.base import FontEntry, Selection, SourceError
+from fontain.sources.filenames import parse_filename
 
 METADATA = "https://fonts.google.com/metadata/fonts"
 CONTENTS = "https://api.github.com/repos/google/fonts/contents/{}"
 LICENSE_DIRS = ("ofl", "apache", "ufl")
 LICENSE_NAMES = {"ofl": "OFL-1.1", "apache": "Apache-2.0", "ufl": "UFL-1.0"}
 
-WEIGHT_NAMES = {
-    "thin": 100,
-    "hairline": 100,
-    "extralight": 200,
-    "ultralight": 200,
-    "light": 300,
-    "regular": 400,
-    "": 400,
-    "medium": 500,
-    "semibold": 600,
-    "demibold": 600,
-    "bold": 700,
-    "extrabold": 800,
-    "ultrabold": 800,
-    "black": 900,
-    "heavy": 900,
-}
 
 
 def slugify(family: str) -> str:
@@ -56,34 +40,6 @@ def parse_index(data: dict[str, Any]) -> list[FontEntry]:
             )
         )
     return out
-
-
-def parse_filename(name: str) -> tuple[int | None, str]:
-    """Infer ``(weight, style)`` from a google/fonts file name.
-
-    Variable fonts (``Family[wght].ttf``) cover every weight, so weight is None.
-    """
-    stem = name.rsplit(".", 1)[0]
-    variable = "[" in stem
-    stem = stem.split("[", 1)[0]
-    suffix = stem.split("-", 1)[1] if "-" in stem else ""
-    italic = suffix.lower().endswith("italic")
-    if italic:
-        suffix = suffix[: -len("italic")]
-    style = "italic" if italic else "normal"
-    if variable:
-        return None, style
-    return _weight(suffix.lower()), style
-
-
-def _weight(suffix: str) -> int | None:
-    """Map a style suffix to a weight, tolerating prefixes like ``SemiWide``."""
-    if suffix in WEIGHT_NAMES:
-        return WEIGHT_NAMES[suffix]
-    for name in sorted(WEIGHT_NAMES, key=len, reverse=True):
-        if name and suffix.endswith(name):
-            return WEIGHT_NAMES[name]
-    return None
 
 
 def select_files(listing: list[dict[str, Any]], sel: Selection) -> list[tuple[str, str]]:

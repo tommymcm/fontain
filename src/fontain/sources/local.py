@@ -10,9 +10,9 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
-from fontain.sources.archives import FORMAT_PREFERENCE, basename, pick_fonts
+from fontain.sources.archives import FORMAT_PREFERENCE, pick_fonts
 from fontain.sources.base import FontEntry, Selection, SourceError
-from fontain.sources.github import _variants
+from fontain.sources.filenames import basename, variants_of
 
 
 def _font_files(root: Path, base: Path) -> list[str]:
@@ -39,7 +39,7 @@ def scan(source: str, root: Path) -> list[FontEntry]:
         picked = pick_fonts(files)
         if not picked:
             continue
-        weights, styles = _variants(picked)
+        weights, styles = variants_of(picked)
         entries.append(
             FontEntry(
                 source=source,

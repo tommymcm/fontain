@@ -1,7 +1,5 @@
-import pytest
-
 from fontain.sources.base import Selection
-from fontain.sources.google import parse_filename, parse_index, select_files, slugify
+from fontain.sources.google import parse_index, select_files, slugify
 
 
 def test_slugify():
@@ -25,25 +23,6 @@ def test_parse_index():
     assert e.category == "sans-serif"
     assert e.weights == (400, 700)
     assert e.styles == ("normal", "italic")
-
-
-@pytest.mark.parametrize(
-    "name,expected",
-    [
-        ("Lato-Regular.ttf", (400, "normal")),
-        ("Lato-Italic.ttf", (400, "italic")),
-        ("Lato-ExtraBoldItalic.ttf", (800, "italic")),
-        ("Lato-Thin.ttf", (100, "normal")),
-        ("Inter[opsz,wght].ttf", (None, "normal")),
-        ("MonaspaceNeon-SemiWideBold.otf", (700, "normal")),
-        ("MonaspaceNeon-SemiWideSemiBold.otf", (600, "normal")),
-        ("MonaspaceNeon-WideExtraLightItalic.otf", (200, "italic")),
-        ("Foo-Condensed.ttf", (None, "normal")),
-        ("Inter-Italic[opsz,wght].ttf", (None, "italic")),
-    ],
-)
-def test_parse_filename(name, expected):
-    assert parse_filename(name) == expected
 
 
 def _f(name):

@@ -11,9 +11,9 @@ from pathlib import Path
 from typing import Any
 
 from fontain import net
-from fontain.sources.archives import FORMAT_PREFERENCE, basename, extract_fonts, pick_fonts
+from fontain.sources.archives import FORMAT_PREFERENCE, extract_fonts, pick_fonts
 from fontain.sources.base import FontEntry, Selection, SourceError
-from fontain.sources.google import parse_filename
+from fontain.sources.filenames import basename, variants_of
 
 API = "https://api.github.com/repos/{}"
 RAW = "https://raw.githubusercontent.com/{}/{}/{}"
@@ -31,13 +31,6 @@ def _strip_suffix(name: str) -> str | None:
 
 def _font_id(stem: str) -> str:
     return VERSION_TAIL.sub("", stem) or stem
-
-
-def _variants(names: list[str]) -> tuple[tuple[int, ...], tuple[str, ...]]:
-    parsed = [parse_filename(basename(n)) for n in names]
-    weights = tuple(sorted({w for w, _ in parsed if w is not None}))
-    styles = tuple(s for s in ("normal", "italic") if any(p[1] == s for p in parsed))
-    return weights, styles
 
 
 def parse_release(source: str, repo: str, release: dict[str, Any]) -> list[FontEntry]:
@@ -65,7 +58,7 @@ def parse_release(source: str, repo: str, release: dict[str, Any]) -> list[FontE
     if loose:
         picked = pick_fonts([n for n, _ in loose])
         files = [[n, u] for n, u in loose if n in picked]
-        weights, styles = _variants(picked)
+        weights, styles = variants_of(picked)
         repo_id = repo.split("/")[1]
         entries.append(
             FontEntry(
@@ -85,7 +78,7 @@ def parse_tree(source: str, repo: str, branch: str, tree: dict[str, Any]) -> lis
     picked = pick_fonts(blobs)
     if not picked:
         return []
-    weights, styles = _variants(picked)
+    weights, styles = variants_of(picked)
     repo_id = repo.split("/")[1]
     return [
         FontEntry(
