@@ -6,7 +6,7 @@ import sys
 from collections.abc import Sequence
 
 from fontain import __version__, completion, fontcache, index, logo, net, paths, repl, repos, sources, store
-from fontain.sources import SOURCES, Selection, SourceError
+from fontain.sources import FETCH_ERRORS, SOURCES, Selection, SourceError
 
 
 def err(msg: str) -> None:
@@ -171,7 +171,7 @@ def cmd_refresh(args) -> int:
     for name in args.sources or list(known):
         try:
             print(f"{name}: {len(index.refresh(name))} fonts")
-        except (net.NetError, SourceError, OSError, ValueError, KeyError) as e:
+        except FETCH_ERRORS as e:
             failures += 1
             err(f"{name}: {e}")
     return 1 if failures else 0
@@ -220,7 +220,7 @@ def cmd_repo_add(args) -> int:
         print(f"Checking {cfg['target']}...", flush=True)
         try:
             entries = source.fetch_index()
-        except (net.NetError, SourceError, OSError, ValueError, KeyError) as e:
+        except FETCH_ERRORS as e:
             if isinstance(e, net.NetError) and e.status == 404:
                 e = f"GitHub repository {cfg['target']} not found (or private)"
             err(f"could not read repository: {e}")

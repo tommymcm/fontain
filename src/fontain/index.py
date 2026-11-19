@@ -5,8 +5,8 @@ import sys
 import time
 from dataclasses import dataclass
 
-from fontain import jsonfile, net, paths, sources
-from fontain.sources import FontEntry, SourceError
+from fontain import jsonfile, paths, sources
+from fontain.sources import FETCH_ERRORS, FontEntry
 
 TTL_SECONDS = 24 * 3600
 
@@ -45,7 +45,7 @@ def load(source: str, max_age: float = TTL_SECONDS) -> list[FontEntry]:
         try:
             print(f"Fetching {source} index...", file=sys.stderr)
             return refresh(source)
-        except (net.NetError, SourceError, ValueError, KeyError) as e:
+        except FETCH_ERRORS as e:
             if not path.exists():
                 raise
             print(f"warning: {e}; using cached {source} index", file=sys.stderr)
@@ -58,7 +58,7 @@ def load_many(names: list[str]) -> dict[str, list[FontEntry]]:
     for name in names:
         try:
             out[name] = load(name)
-        except (net.NetError, SourceError, OSError, ValueError, KeyError) as e:
+        except FETCH_ERRORS as e:
             print(f"warning: skipping {name}: {e}", file=sys.stderr)
     return out
 

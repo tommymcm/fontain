@@ -6,12 +6,17 @@ built-in sources, then user repositories in the order they were added.
 
 from typing import Any
 
+from fontain.net import NetError
 from fontain.sources.base import FontEntry, Selection, Source, SourceError
 from fontain.sources.fontsource import FontsourceSource
 from fontain.sources.github import GitHubRepoSource
 from fontain.sources.google import GoogleSource
 from fontain.sources.local import LocalDirSource
 from fontain.sources.nerdfonts import NerdFontsSource
+
+# What reading a source can raise: network trouble, a source-specific problem,
+# filesystem errors, or a response that isn't the shape we expect.
+FETCH_ERRORS = (NetError, SourceError, OSError, ValueError, KeyError)
 
 SOURCES: dict[str, Source] = {s.name: s for s in (FontsourceSource(), GoogleSource(), NerdFontsSource())}
 
@@ -38,4 +43,4 @@ def registry() -> dict[str, Source]:
     return out
 
 
-__all__ = ["SOURCES", "FontEntry", "Selection", "Source", "SourceError", "make_source", "registry"]
+__all__ = ["FETCH_ERRORS", "SOURCES", "FontEntry", "Selection", "Source", "SourceError", "make_source", "registry"]
